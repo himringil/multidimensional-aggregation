@@ -88,21 +88,26 @@ class AggTree():
                                children=[self._create_tree(c) for c in js.get('child', [])])
 
     def print_tree(self):
-      for pre, _, node in RenderTree(self.tree):
-          treestr = u"%s%s" % (pre, node.name)
-    
-          print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}'
-                f' nodes={node.graph.number_of_nodes()} edges={node.graph.number_of_edges()}')
-          
-          for el in sorted(node.queue):
-              print(f'{" " * len(pre)}{el}: {node.queue[el]}')
+        
+        f = open('out2.3.txt', 'w', encoding='utf-8')
 
-    def select_params(self, row, params):
+        for pre, _, node in RenderTree(self.tree):
+            treestr = u"%s%s" % (pre, node.name)
+        
+            f.write(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}'
+                    f' nodes={node.graph.number_of_nodes()} edges={node.graph.number_of_edges()}\n')
+            
+            for el in sorted(node.queue):
+                f.write(f'{" " * len(pre)}{el}: {node.queue[el]}\n')
+        
+        f.close()
+
+    def select_params(self, row):
     
         values = dict()
         graph = nx.DiGraph()
         
-        for param in params:
+        for param in self.params:
             key = ' && '.join([f'{el}={row[el]}' for el in param]) if type(param) is list else f'{param}={row[param]}'
             values[key] = 1
             graph.add_node(key)
@@ -127,7 +132,7 @@ class AggTree():
                 self.modify_node(child, _time_start, _values, _graph)
 
     def aggregate(self, row):
-        datetime, values, graph = self.select_params(row, self.params)
+        datetime, values, graph = self.select_params(row)
         self.modify_node(self.tree, datetime, values, graph)
     
         
@@ -139,12 +144,14 @@ def load_params(path):
     f = open(path)
     return load(f)
 
-def aggregate(path: str, tree: AggTree):
-    for (_, _, filenames) in walk(path):
+def aggregate(tree_conf: str, params_conf: str, data_path: str):
+    tree = AggTree(tree_conf, params_conf)
+
+    for (_, _, filenames) in walk(data_path):
         for filename in sorted(filenames):
             if filename.endswith('.parquet'):
                     
-                filepath = join(path, filename)
+                filepath = join(data_path, filename)
                 df = pd.read_parquet(filepath)
                 df['datetime'] = pd.to_datetime(df['date'].astype(str) + ' ' + df['time'], errors='coerce', format='%d%b%Y %H:%M:%S')
                 df.drop(axis=1, columns=['date', 'time'], inplace=True)
@@ -166,4 +173,4 @@ if __name__ == '__main__':
     if len(argv) < 4:
         raise Exception('args: <tree_config_path> <params_config_path> <data_folder_path>')
 
-    aggregate(argv[3], AggTree(load_tree(argv[1]), load_params(argv[2])))
+    aggregate(load_tree(argv[1]), load_params(argv[2]), argv[3])
