@@ -87,20 +87,20 @@ class AggTree():
                                time_delta=timedelta(seconds=timeparse(js['delta'])),
                                children=[self._create_tree(c) for c in js.get('child', [])])
 
-    def print_tree(self):
+    @staticmethod
+    def print_tree(tree):
         
-        f = open('out2.3.txt', 'w', encoding='utf-8')
-
-        for pre, _, node in RenderTree(self.tree):
+        for pre, _, node in RenderTree(tree):
             treestr = u"%s%s" % (pre, node.name)
         
-            f.write(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}'
+            print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}'
                     f' nodes={node.graph.number_of_nodes()} edges={node.graph.number_of_edges()}\n')
             
             for el in sorted(node.queue):
-                f.write(f'{" " * len(pre)}{el}: {node.queue[el]}\n')
-        
-        f.close()
+                print(f'{" " * len(pre)}{el}: {node.queue[el]}\n')
+                    
+    def print(self):
+        AggTree.print_tree(self.tree)
 
     def select_params(self, row):
     

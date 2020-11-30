@@ -7,7 +7,6 @@ from json import load
 
 import pandas as pd
 from anytree import NodeMixin, RenderTree
-import networkx as nx
 
 class AggTree():
 
@@ -117,23 +116,23 @@ class AggTree():
                                time_delta=timedelta(seconds=timeparse(js['delta'])),
                                children=[self._create_tree(c) for c in js.get('child', [])])
 
-    def print_tree(self):
+    @staticmethod
+    def print_tree(tree):
         # TODO
-        f = open('out2.1.txt', 'w', encoding='utf-8')
-
-        for pre, _, node in RenderTree(self.tree):
+        for pre, _, node in RenderTree(tree):
             treestr = u"%s%s" % (pre, node.name)
-            f.write(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}\n')
+            print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}\n')
             
             for el in sorted(node.queue):
-                f.write(f'{" " * len(pre)}{el}:\n')
+                print(f'{" " * len(pre)}{el}:\n')
                 for i in node.queue[el]:
                     for pre1, _, node1 in RenderTree(i):
                         treestr1 = u"%s%s" % (pre1, node1.name)
-                        f.write(f'{" " * len(pre)}{treestr1.ljust(8)}:    {node1.value}\n')
-        
-        f.close()
+                        print(f'{" " * len(pre)}{treestr1.ljust(8)}:    {node1.value}\n')
                     
+    def print(self):
+        AggTree.print_tree(self.tree)
+
     def _create_values_tree(self, row, param):
         name = ' && '.join([f'{el}={row[el]}' for el in param if type(el) == str])
         l = param[-1] if type(param[-1]) == list else []

@@ -86,13 +86,17 @@ class AggTree():
                                time_delta=timedelta(seconds=timeparse(js['delta'])),
                                children=[self._create_tree(c) for c in js.get('child', [])])
 
-    def print_tree(self):
-        for pre, _, node in RenderTree(self.tree):
+    @staticmethod
+    def print_tree(tree):
+        for pre, _, node in RenderTree(tree):
             treestr = u"%s%s" % (pre, node.name)
             print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}')
             for el in sorted(node.queue):
                 if sum(node.queue[el]) / len(node.queue[el]) > 1:
                     print(f'{" " * len(pre)}{el}: {node.queue[el]}')
+
+    def print(self):
+        AggTree.print_tree(self.tree)
 
     def select_params(self, row):
     
@@ -112,6 +116,20 @@ class AggTree():
     def aggregate(self, row):
         datetime, values = self.select_params(row)
         self.modify_node(self.tree, datetime, values)
+
+    def _get_node_queues(self, params, node):
+        new_node = self.TimeSeries(node.name, node.time_range, node.time_delta, parent=None, children=[self._get_node_queues(params, child) for child in node.children])
+        for key in node.queue:
+            for param in params:
+                if param not in key:
+                    break
+            else:
+                new_node.queue[key] = node.queue[key]
+        return new_node
+
+    def get_queues(self, params: list):
+        return self._get_node_queues(params, self.tree)
+
 
 def load_tree(path):
     f = open(path)
@@ -142,7 +160,16 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                     except Exception as e:
                         print(e)
                         
-                tree.print_tree()
+                tree.print()
+
+                print('--------------------------------')
+                AggTree.print_tree(tree.get_queues(['service']))
+                print('--------------------------------')
+                AggTree.print_tree(tree.get_queues(['service=137']))
+                print('--------------------------------')
+                AggTree.print_tree(tree.get_queues(['192.168.1.20', '44818']))
+                print('--------------------------------')
+
                 return
 
 if __name__ == '__main__':
