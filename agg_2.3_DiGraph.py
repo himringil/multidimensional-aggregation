@@ -9,6 +9,8 @@ import pandas as pd
 from anytree import NodeMixin, RenderTree
 import networkx as nx
 
+from AggResult import AggResult
+
 class AggTree():
 
     class TimeSeries(NodeMixin):
@@ -87,20 +89,13 @@ class AggTree():
                                time_delta=timedelta(seconds=timeparse(js['delta'])),
                                children=[self._create_tree(c) for c in js.get('child', [])])
 
-    @staticmethod
-    def print_tree(tree):
-        
-        for pre, _, node in RenderTree(tree):
+    def print(self):
+        for pre, _, node in RenderTree(self.tree):
             treestr = u"%s%s" % (pre, node.name)
-        
             print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}'
                     f' nodes={node.graph.number_of_nodes()} edges={node.graph.number_of_edges()}\n')
-            
             for el in sorted(node.queue):
                 print(f'{" " * len(pre)}{el}: {node.queue[el]}\n')
-                    
-    def print(self):
-        AggTree.print_tree(self.tree)
 
     def select_params(self, row):
     
@@ -135,6 +130,27 @@ class AggTree():
         datetime, values, graph = self.select_params(row)
         self.modify_node(self.tree, datetime, values, graph)
     
+    def filter(self, params: list, timeseries_name: list):
+        result = AggResult()
+        time_series_nodes = [self.tree]
+        while time_series_nodes:
+            time_series_node = time_series_nodes.pop(0)
+            for child in time_series_node.children:
+                time_series_nodes.append(child)
+            # filter time series
+            if time_series_node.name not in timeseries_name:
+                continue
+            result.add(time_series_node.name, time_series_node.time_start, time_series_node.time_range, time_series_node.time_delta)
+            # filter queues
+            for key in time_series_node.queue:
+                for param in params:
+                    if param[0] not in key or f'{param[0]}={param[1]}' not in key:
+                        break
+                else:
+                    # name of queue contain all requires params
+                    result[time_series_node.name].add(key, time_series_node.queue[key])
+        return result
+
         
 def load_tree(path):
     f = open(path)
@@ -165,7 +181,15 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                     except Exception as e:
                         pass
 
-                tree.print_tree()
+                tree.print()
+
+                print('--------------------------------')
+                tree.filter([['service', '']], ['10sec -> 1sec']).print()
+                print('--------------------------------')
+                tree.filter([['service', '137']], ['10min -> 30sec']).print()
+                print('--------------------------------')
+                tree.filter([['', '192.168.1.20'], ['', '44818']], ['2hours -> 20min', '1hour -> 5min']).print()
+
                 return
 
 if __name__ == '__main__':

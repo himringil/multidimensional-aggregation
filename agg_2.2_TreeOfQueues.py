@@ -135,22 +135,16 @@ class AggTree():
                                time_range=timedelta(seconds=timeparse(js['range'])),
                                time_delta=timedelta(seconds=timeparse(js['delta'])),
                                children=[self._create_tree(c) for c in js.get('child', [])])
-
-    @staticmethod
-    def print_tree(tree):
-        # TODO
-        for pre, _, node in RenderTree(tree):
+                    
+    def print(self):
+        for pre, _, node in RenderTree(self.tree):
             treestr = u"%s%s" % (pre, node.name)
             print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}\n')
-            
             for el in sorted(node.queue):
                 print(f'{" " * len(pre)}{el}:\n')
                 for pre1, _, node1 in RenderTree(node.queue[el]):
                     treestr1 = u"%s%s" % (pre1, node1.name)
                     print(f'{" " * len(pre)}{treestr1.ljust(8)}:    {node1.value}\n')
-                    
-    def print(self):
-        AggTree.print_tree(self.tree)
                     
     def _params_to_values_tree(self, row, param, prev):
         name = ' && '.join([f'{el}={row[el]}' for el in param if type(el) == str])
@@ -174,16 +168,18 @@ class AggTree():
         datetime, values = self.select_params(row)
         self.modify_node(self.tree, datetime, values)
 
-    def get_queues(self, params: dict, timeseries_name: list):
+    def filter(self, params: list, timeseries_name: list):
         result = AggResult()
         time_series_nodes = [self.tree]
         while time_series_nodes:
             time_series_node = time_series_nodes.pop(0)
             for child in time_series_node.children:
                 time_series_nodes.append(child)
+            # filter time series
             if time_series_node.name not in timeseries_name:
                 continue
             result.add(time_series_node.name, time_series_node.time_start, time_series_node.time_range, time_series_node.time_delta)
+            # filter queues
             for key in time_series_node.queue:
                 for param in params:
                     if param[0] not in key:
@@ -233,11 +229,11 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
 
                 tree.print()
 
-                tree.get_queues([['service', '']], ['10sec -> 1sec']).print()
+                tree.filter([['service', '']], ['10sec -> 1sec']).print()
                 print('--------------------------------')
-                tree.get_queues([['service', '137']], ['10min -> 30sec']).print()
+                tree.filter([['service', '137']], ['10min -> 30sec']).print()
                 print('--------------------------------')
-                tree.get_queues([['', '192.168.1.20'], ['', '44818']], ['2hours -> 20min', '1hour -> 5min']).print()
+                tree.filter([['', '192.168.1.20'], ['', '44818']], ['2hours -> 20min', '1hour -> 5min']).print()
 
                 return
 

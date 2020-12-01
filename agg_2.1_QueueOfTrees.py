@@ -115,23 +115,17 @@ class AggTree():
                                time_range=timedelta(seconds=timeparse(js['range'])),
                                time_delta=timedelta(seconds=timeparse(js['delta'])),
                                children=[self._create_tree(c) for c in js.get('child', [])])
-
-    @staticmethod
-    def print_tree(tree):
-        # TODO
-        for pre, _, node in RenderTree(tree):
+                        
+    def print(self):
+        for pre, _, node in RenderTree(self.tree):
             treestr = u"%s%s" % (pre, node.name)
             print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}\n')
-            
             for el in sorted(node.queue):
                 print(f'{" " * len(pre)}{el}:\n')
                 for i in node.queue[el]:
                     for pre1, _, node1 in RenderTree(i):
                         treestr1 = u"%s%s" % (pre1, node1.name)
                         print(f'{" " * len(pre)}{treestr1.ljust(8)}:    {node1.value}\n')
-                    
-    def print(self):
-        AggTree.print_tree(self.tree)
 
     def _create_values_tree(self, row, param):
         name = ' && '.join([f'{el}={row[el]}' for el in param if type(el) == str])
@@ -199,6 +193,9 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         pass
 
                 tree.print()
+
+
+
                 return
 
 if __name__ == '__main__':
