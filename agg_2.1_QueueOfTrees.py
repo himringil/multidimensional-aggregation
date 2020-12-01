@@ -154,6 +154,19 @@ class AggTree():
         datetime, values = self.select_params(row)
         self.modify_node(self.tree, datetime, values)
     
+    def _get_node_queues(self, params, node):
+        new_node = self.TimeSeries(node.name, node.time_range, node.time_delta, parent=None, children=[self._get_node_queues(params, child) for child in node.children])
+        for key in node.queue:
+            for param in params:
+                if param[0] not in key or f'{param[0]}={param[1]}' not in key:
+                    break
+            else:
+                new_node.queue[key] = node.queue[key]
+        return new_node
+
+    def get_queues(self, params: dict):
+        return self._get_node_queues(params, self.tree)
+
         
 def load_tree(path):
     f = open(path)
@@ -185,7 +198,7 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         print(index, e)
                         pass
 
-                tree.print_tree()
+                tree.print()
                 return
 
 if __name__ == '__main__':

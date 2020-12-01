@@ -121,7 +121,7 @@ class AggTree():
         new_node = self.TimeSeries(node.name, node.time_range, node.time_delta, parent=None, children=[self._get_node_queues(params, child) for child in node.children])
         for key in node.queue:
             for param in params:
-                if param not in key:
+                if param[0] not in key or f'{param[0]}={param[1]}' not in key:
                     break
             else:
                 new_node.queue[key] = node.queue[key]
@@ -163,11 +163,11 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                 tree.print()
 
                 print('--------------------------------')
-                AggTree.print_tree(tree.get_queues(['service']))
+                AggTree.print_tree(tree.get_queues([['service', '']]))
                 print('--------------------------------')
-                AggTree.print_tree(tree.get_queues(['service=137']))
+                AggTree.print_tree(tree.get_queues([['service', '137']]))
                 print('--------------------------------')
-                AggTree.print_tree(tree.get_queues(['192.168.1.20', '44818']))
+                AggTree.print_tree(tree.get_queues([['', '192.168.1.20'], ['', '44818']]))
                 print('--------------------------------')
 
                 return
