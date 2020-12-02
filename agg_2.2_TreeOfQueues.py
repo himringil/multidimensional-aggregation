@@ -146,16 +146,16 @@ class AggTree():
                     treestr1 = u"%s%s" % (pre1, node1.name)
                     print(f'{" " * len(pre)}{treestr1.ljust(8)}:    {node1.value}\n')
                     
-    def _params_to_values_tree(self, row, param, prev):
+    def _create_values_tree(self, row, param, prev):
         name = ' && '.join([f'{el}={row[el]}' for el in param if type(el) == str])
         fullname = ' | '.join([prev, name]) if prev else name
         l = param[-1] if type(param[-1]) == list else []
-        return self.TimeSeries.ValuesTree(fullname, name, 1, children=[self._params_to_values_tree(row, l, fullname)] if l else [])
+        return self.TimeSeries.ValuesTree(fullname, name, 1, children=[self._create_values_tree(row, l, fullname)] if l else [])
 
     def select_params(self, row):
         values = dict()
         for param in self.params:
-            values[param] = self.TimeSeries.ValuesTree('', '', 1, children=[self._params_to_values_tree(row, self.params[param], '')])
+            values[param] = self.TimeSeries.ValuesTree('', '', 1, children=[self._create_values_tree(row, self.params[param], '')])
         return row['datetime'], values
  
     def modify_node(self, node: TimeSeries, dt: datetime, values):

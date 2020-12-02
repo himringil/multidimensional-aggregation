@@ -8,14 +8,17 @@ from json import load
 import pandas as pd
 from anytree import NodeMixin, RenderTree
 
+from AggResult import AggResult
+
 class AggTree():
 
     class TimeSeries(NodeMixin):
     
         class ValuesTree(NodeMixin):
              
-            def __init__(self, name, value, parent=None, children=None):
+            def __init__(self, fullname, name, value, parent=None, children=None):
     
+                self.fullname = fullname
                 self.name = name
                 self.value = value
 
@@ -56,7 +59,7 @@ class AggTree():
             # start queue if it is empty
             if not self.time_start:
                 for el in values:
-                    self.queue[el] = [self.ValuesTree('', 0)] * self.q
+                    self.queue[el] = [self.ValuesTree('', '', 0)] * self.q
                     self.queue[el][-1] = values[el]
                 self.time_start = dt - self.time_range + self.time_delta
                 return
@@ -70,14 +73,14 @@ class AggTree():
                 old_values = dict()
                 for el in self.queue:
                     old_values[el] = self.queue[el].pop(0)
-                    self.queue[el].append(self.ValuesTree('', 0))
+                    self.queue[el].append(self.ValuesTree('', '', 0))
                 yield old_values, self.time_start
                 self.time_start += self.time_delta
     
             # new element belongs to last element of queue
             for el in values:
                 if not self.queue.get(el):
-                    self.queue[el] = [self.ValuesTree('', 0)] * self.q
+                    self.queue[el] = [self.ValuesTree('', '', 0)] * self.q
                 self._merge_trees([self.queue[el][-1]], values[el])
                 #self.queue[el][-1] += values[el]
     
@@ -127,15 +130,16 @@ class AggTree():
                         treestr1 = u"%s%s" % (pre1, node1.name)
                         print(f'{" " * len(pre)}{treestr1.ljust(8)}:    {node1.value}\n')
 
-    def _create_values_tree(self, row, param):
+    def _create_values_tree(self, row, param, prev):
         name = ' && '.join([f'{el}={row[el]}' for el in param if type(el) == str])
+        fullname = ' | '.join([prev, name]) if prev else name
         l = param[-1] if type(param[-1]) == list else []
-        return self.TimeSeries.ValuesTree(name, 1, children=[self._create_values_tree(row, l)] if l else [])
+        return self.TimeSeries.ValuesTree(fullname, name, 1, children=[self._create_values_tree(row, l, fullname)] if l else [])
 
     def select_params(self, row):
         values = dict()
         for param in self.params:
-            values[param] = self.TimeSeries.ValuesTree('', 1, children=[self._create_values_tree(row, self.params[param])])
+            values[param] = self.TimeSeries.ValuesTree('', '', 1, children=[self._create_values_tree(row, self.params[param], '')])
         return row['datetime'], values
  
     def modify_node(self, node: TimeSeries, dt: datetime, values):
@@ -147,19 +151,44 @@ class AggTree():
     def aggregate(self, row):
         datetime, values = self.select_params(row)
         self.modify_node(self.tree, datetime, values)
-    
-    def _get_node_queues(self, params, node):
-        new_node = self.TimeSeries(node.name, node.time_range, node.time_delta, parent=None, children=[self._get_node_queues(params, child) for child in node.children])
-        for key in node.queue:
-            for param in params:
-                if param[0] not in key or f'{param[0]}={param[1]}' not in key:
-                    break
-            else:
-                new_node.queue[key] = node.queue[key]
-        return new_node
 
-    def get_queues(self, params: dict):
-        return self._get_node_queues(params, self.tree)
+    def filter(self, params: list, timeseries_name: list):
+        result = AggResult()
+        time_series_nodes = [self.tree]
+        while time_series_nodes:
+            time_series_node = time_series_nodes.pop(0)
+            for child in time_series_node.children:
+                time_series_nodes.append(child)
+            # filter time series
+            if time_series_node.name not in timeseries_name:
+                continue
+            result.add(time_series_node.name, time_series_node.time_start, time_series_node.time_range, time_series_node.time_delta)
+            # filter queues
+            for key in time_series_node.queue:
+                for param in params:
+                    if param[0] not in key:
+                        break
+                else:
+                    # name of queue contain all requires params
+                    # need check every tree in queue
+                    queues = dict()
+                    for i, cur_tree in enumerate(time_series_node.queue[key]):
+                        for values_tree_node in cur_tree.descendants:
+                            for param in params:
+                                if f'{param[0]}={param[1]}' not in values_tree_node.fullname:
+                                    break
+                            else:
+                                if values_tree_node.fullname not in queues.keys():
+                                    queues[values_tree_node.fullname] = []
+                                if len(queues[values_tree_node.fullname]) < i:
+                                    queues[values_tree_node.fullname] += [0] * (i - len(queues[values_tree_node.fullname]))
+                                queues[values_tree_node.fullname].append(values_tree_node.value)
+                    for el in queues:
+                        if len(queues[el]) < len(time_series_node.queue[key]):
+                            queues[el] += [0] * (len(time_series_node.queue[key]) - len(queues[el]))
+                        assert len(queues[el]) == len(time_series_node.queue[key])
+                        result[time_series_node.name].add(el, queues[el])
+        return result
 
         
 def load_tree(path):
@@ -194,7 +223,11 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
 
                 tree.print()
 
-
+                tree.filter([['service', '']], ['10sec -> 1sec']).print()
+                print('--------------------------------')
+                tree.filter([['service', '137']], ['10min -> 30sec']).print()
+                print('--------------------------------')
+                tree.filter([['', '192.168.1.20'], ['', '44818']], ['2hours -> 20min', '1hour -> 5min']).print()
 
                 return
 
