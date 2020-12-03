@@ -65,12 +65,12 @@ class AggTree():
             el.value.append(0)
             return self.ValuesTree(el.fullname, el.name, el.value.pop(0), children=[self._oldest_values_to_values_tree(c) for c in el.children])
 
-        def _delete_zero_nodes(self, node):
+        def _delete_zero_elements(self, node):
             for child in node.children:
                 if sum(child.value) == 0:
                     child.parent = None
                 else:
-                    self._delete_zero_nodes(child)
+                    self._delete_zero_elements(child)
 
         def add_element(self, dt: datetime, values):
     
@@ -104,7 +104,7 @@ class AggTree():
                 if sum(self.queue[el].value) == 0:
                     self.queue[el] = self.ValuesTree('', '', [0] * self.q)
                 else:
-                    self._delete_zero_nodes(self.queue[el])
+                    self._delete_zero_elements(self.queue[el])
     
             return
 

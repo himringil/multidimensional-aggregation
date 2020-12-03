@@ -33,20 +33,30 @@ class AggTree():
             self.parent = parent
             if children:
                 self.children = children
-    
-        def add_element(self, dt: datetime, values, graph):
+       
+        def _delete_zero_elements(self):
+            for key in list(self.queue.keys()):
+                if sum(self.queue[key]) == 0:
+                    self.queue.pop(key)
+                    self.graph.remove_node(key)
+
+        def add(self, dt: datetime, values, graph):
     
             # start queue if it is empty
             if not self.time_start:
                 for el in values:
-                    self.queue[el] = [0] * self.q
-                    self.queue[el][-1] = values[el]
-                self.time_start = dt - self.time_range + self.time_delta
-                self.graph = nx.compose(self.graph, graph)
+                    if values[el] != 0:
+                        self.queue[el] = [0] * self.q
+                        self.queue[el][-1] = values[el]
+                    else:
+                        graph.remove_node(el)
+                if self.queue:
+                    self.time_start = dt - self.time_range + self.time_delta
+                    self.graph = graph.copy()
                 return
     
             if dt < self.time_start + self.time_range - self.time_delta:
-                #print(dt, self.time_start, self.time_range, self.time_delta, self.time_start + self.time_range - self.time_delta)
+                print(dt, self.time_start, self.time_range, self.time_delta, self.time_start + self.time_range - self.time_delta)
                 raise ValueError
     
             # pop elements from queue and insert into childs while new element time not reached
@@ -55,7 +65,8 @@ class AggTree():
                 for el in self.queue:
                     old_values[el] = self.queue[el].pop(0)
                     self.queue[el].append(0)
-                yield old_values, self.time_start, self.graph
+                for child in self.children:
+                    child.add(self.time_start, old_values, self.graph)
                 self.time_start += self.time_delta
     
             # new element belongs to last element of queue
@@ -65,14 +76,11 @@ class AggTree():
                 self.queue[el][-1] += values[el]
             self.graph = nx.compose(self.graph, graph)
     
-            for key in list(self.queue.keys()):
-                if sum(self.queue[key]) == 0:
-                    self.queue.pop(key)
-                    self.graph.remove_node(key)
-    
-            return
+            self._delete_zero_elements()
+
 
     def __init__(self, tree: dict, params: list):
+        # TODO: check params struct
         self.tree = self._create_tree(tree)
         self.params = params
 
@@ -93,9 +101,9 @@ class AggTree():
         for pre, _, node in RenderTree(self.tree):
             treestr = u"%s%s" % (pre, node.name)
             print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}'
-                    f' nodes={node.graph.number_of_nodes()} edges={node.graph.number_of_edges()}\n')
+                    f' nodes={node.graph.number_of_nodes()} edges={node.graph.number_of_edges()}')
             for el in sorted(node.queue):
-                print(f'{" " * len(pre)}{el}: {node.queue[el]}\n')
+                print(f'{" " * len(pre)}{el}: {node.queue[el]}')
 
     def select_params(self, row):
     
@@ -119,16 +127,10 @@ class AggTree():
                         graph.add_edge(node1, node2)
         
         return row['datetime'], values, graph
- 
-    def modify_node(self, node: TimeSeries, dt: datetime, values, graph):
-        for _values, _time_start, _graph in node.add_element(dt, values, graph):
-            # insert it to childs
-            for child in node.children:
-                self.modify_node(child, _time_start, _values, _graph)
-
+    
     def aggregate(self, row):
         datetime, values, graph = self.select_params(row)
-        self.modify_node(self.tree, datetime, values, graph)
+        self.tree.add(datetime, values, graph)
     
     def filter(self, params: list, timeseries_name: list):
         result = AggResult()
@@ -151,7 +153,7 @@ class AggTree():
                     result[time_series_node.name].add(key, time_series_node.queue[key])
         return result
 
-        
+
 def load_tree(path):
     f = open(path)
     return load(f)
@@ -162,7 +164,7 @@ def load_params(path):
 
 def aggregate(tree_conf: str, params_conf: str, data_path: str):
     tree = AggTree(tree_conf, params_conf)
-
+    
     for (_, _, filenames) in walk(data_path):
         for filename in sorted(filenames):
             if filename.endswith('.parquet'):
@@ -180,7 +182,7 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         tree.aggregate(row)
                     except Exception as e:
                         pass
-
+                
                 tree.print()
 
                 print('--------------------------------')

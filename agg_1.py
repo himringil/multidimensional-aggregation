@@ -13,7 +13,7 @@ from AggResult import AggResult
 class AggTree():
 
     class TimeSeries(NodeMixin):
-
+    
         def __init__(self, name, time_range: timedelta, time_delta: timedelta, parent=None, children=None):
     
             self.q, r = divmod(time_range, time_delta)
@@ -32,27 +32,26 @@ class AggTree():
             if children:
                 self.children = children
     
-        def add_element(self, dt: datetime, values):
+        def _delete_zero_elements(self):
+            for key in list(self.queue.keys()):
+                if sum(self.queue[key]) == 0:
+                    self.queue.pop(key)
+
+        def add(self, dt: datetime, values):
     
             # start queue if it is empty
             if not self.time_start:
                 for el in values:
-                    self.queue[el] = [0] * self.q
-                    self.queue[el][-1] = values[el]
-                self.time_start = dt - self.time_range + self.time_delta
+                    if values[el] != 0:
+                        self.queue[el] = [0] * self.q
+                        self.queue[el][-1] = values[el]
+                if self.queue:
+                    self.time_start = dt - self.time_range + self.time_delta
                 return
     
             if dt < self.time_start + self.time_range - self.time_delta:
                 print(dt, self.time_start, self.time_range, self.time_delta, self.time_start + self.time_range - self.time_delta)
                 raise ValueError
-    
-            # new element belongs to last element of queue
-            if self.time_start + self.time_range - self.time_delta <= dt < self.time_start + self.time_range:
-                for el in values:
-                    if not self.queue.get(el):
-                        self.queue[el] = [0] * self.q
-                    self.queue[el][-1] += values[el]
-                return
     
             # pop elements from queue and insert into childs while new element time not reached
             while not self.time_start + self.time_range - self.time_delta <= dt < self.time_start + self.time_range:
@@ -60,15 +59,18 @@ class AggTree():
                 for el in self.queue:
                     old_values[el] = self.queue[el].pop(0)
                     self.queue[el].append(0)
-                yield old_values, self.time_start
+                for child in self.children:
+                    child.add(self.time_start, old_values)
                 self.time_start += self.time_delta
     
+            # new element belongs to last element of queue
             for el in values:
                 if not self.queue.get(el):
                     self.queue[el] = [0] * self.q
-                self.queue[el][-1] = values[el]
+                self.queue[el][-1] += values[el]
     
-            return
+            self._delete_zero_elements()
+
 
     def __init__(self, tree: dict, params: list):
         # TODO: check params struct
@@ -93,25 +95,19 @@ class AggTree():
             treestr = u"%s%s" % (pre, node.name)
             print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}')
             for el in sorted(node.queue):
-                if sum(node.queue[el]) / len(node.queue[el]) > 1:
-                    print(f'{" " * len(pre)}{el}: {node.queue[el]}')
+                print(f'{" " * len(pre)}{el}: {node.queue[el]}')
 
     def select_params(self, row):
         values = dict()
         for param in self.params:
-            values[' && '.join([f'{el}={row[el]}' for el in param]) if type(param) is list else f'{param}={row[param]}'] = 1
+            key = ' && '.join([f'{el}={row[el]}' for el in param]) if type(param) is list else f'{param}={row[param]}'
+            values[key] = 1
         return row['datetime'], values
-
-    def modify_node(self, node: TimeSeries, dt: datetime, values):
-        for _values, _time_start in node.add_element(dt, values):
-            # insert it to childs
-            for child in node.children:
-                self.modify_node(child, _time_start, _values)
-
+    
     def aggregate(self, row):
         datetime, values = self.select_params(row)
-        self.modify_node(self.tree, datetime, values)
-
+        self.tree.add(datetime, values)
+    
     def filter(self, params: list, timeseries_name: list):
         result = AggResult()
         time_series_nodes = [self.tree]
@@ -161,8 +157,8 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                     try:
                         tree.aggregate(row)
                     except Exception as e:
-                        print(e)
-                        
+                        pass
+                
                 tree.print()
 
                 print('--------------------------------')
