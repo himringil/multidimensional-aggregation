@@ -42,11 +42,9 @@ class AggTree():
             # start queue if it is empty
             if not self.time_start:
                 for el in values:
-                    if values[el] != 0:
-                        self.queue[el] = [0] * self.q
-                        self.queue[el][-1] = values[el]
-                if self.queue:
-                    self.time_start = dt - self.time_range + self.time_delta
+                    self.queue[el] = [0] * self.q
+                    self.queue[el][-1] = values[el]
+                self.time_start = dt - self.time_range + self.time_delta
                 return
     
             if dt < self.time_start + self.time_range - self.time_delta:
@@ -57,10 +55,13 @@ class AggTree():
             while not self.time_start + self.time_range - self.time_delta <= dt < self.time_start + self.time_range:
                 old_values = dict()
                 for el in self.queue:
-                    old_values[el] = self.queue[el].pop(0)
+                    value = self.queue[el].pop(0)
+                    if value:
+                        old_values[el] = value
                     self.queue[el].append(0)
-                for child in self.children:
-                    child.add(self.time_start, old_values)
+                if old_values:
+                    for child in self.children:
+                        child.add(self.time_start, old_values)
                 self.time_start += self.time_delta
     
             # new element belongs to last element of queue
