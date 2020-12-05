@@ -31,7 +31,7 @@ class AggTree():
             self.parent = parent
             if children:
                 self.children = children
-    
+
         def _delete_zero_elements(self):
             for key in list(self.queue.keys()):
                 if sum(self.queue[key]) == 0:
@@ -59,9 +59,8 @@ class AggTree():
                     if value:
                         old_values[el] = value
                     self.queue[el].append(0)
-                if old_values:
-                    for child in self.children:
-                        child.add(self.time_start, old_values)
+                for child in self.children:
+                    child.add(self.time_start, old_values)
                 self.time_start += self.time_delta
     
             # new element belongs to last element of queue
@@ -162,12 +161,14 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                 
                 tree.print()
 
+                ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
+
                 print('--------------------------------')
-                tree.filter([['service', '']], ['10sec -> 1sec']).print()
+                tree.filter([['src', '192.168.1.10']], ts).print()
                 print('--------------------------------')
-                tree.filter([['service', '137']], ['10min -> 30sec']).print()
+                tree.filter([['service', '137']], ts).print()
                 print('--------------------------------')
-                tree.filter([['', '192.168.1.20'], ['', '44818']], ['2hours -> 20min', '1hour -> 5min']).print()
+                tree.filter([['', '192.168.1.50'], ['service', '']], ts).print()
 
                 return
 

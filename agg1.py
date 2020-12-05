@@ -43,6 +43,10 @@ class AggTree():
             self.parent = parent
             if children:
                 self.children = children
+
+        def _delete_zero_elements(self):
+            # TODO
+            pass
     
         def _merge_trees(self, nodes_to, node_from):
             for node_to in nodes_to:
@@ -54,7 +58,7 @@ class AggTree():
                     return True
             return False
 
-        def add_element(self, dt: datetime, values):
+        def add(self, dt: datetime, values):
     
             # start queue if it is empty
             if not self.time_start:
@@ -65,16 +69,19 @@ class AggTree():
                 return
     
             if dt < self.time_start + self.time_range - self.time_delta:
-                #print(dt, self.time_start, self.time_range, self.time_delta, self.time_start + self.time_range - self.time_delta)
+                print(dt, self.time_start, self.time_range, self.time_delta, self.time_start + self.time_range - self.time_delta)
                 raise ValueError
     
             # pop elements from queue and insert into childs while new element time not reached
             while not self.time_start + self.time_range - self.time_delta <= dt < self.time_start + self.time_range:
                 old_values = dict()
                 for el in self.queue:
-                    old_values[el] = self.queue[el].pop(0)
+                    value = self.queue[el].pop(0)
+                    if value.value:
+                        old_values[el] = value
                     self.queue[el].append(self.ValuesTree('', '', 0))
-                yield old_values, self.time_start
+                for child in self.children:
+                    child.add(self.time_start, old_values)
                 self.time_start += self.time_delta
     
             # new element belongs to last element of queue
@@ -82,14 +89,9 @@ class AggTree():
                 if not self.queue.get(el):
                     self.queue[el] = [self.ValuesTree('', '', 0)] * self.q
                 self._merge_trees([self.queue[el][-1]], values[el])
-                #self.queue[el][-1] += values[el]
     
-            # TODO: delete zero elements in queues?
-            #for key in list(self.queue.keys()):
-            #    if sum(self.queue[key]) == 0:
-            #        self.queue.pop(key)
-    
-            return
+            self._delete_zero_elements()
+
 
     def __init__(self, tree: dict, params: list):
         # TODO: check params struct
@@ -118,7 +120,7 @@ class AggTree():
                                time_range=timedelta(seconds=timeparse(js['range'])),
                                time_delta=timedelta(seconds=timeparse(js['delta'])),
                                children=[self._create_tree(c) for c in js.get('child', [])])
-                        
+
     def print(self):
         for pre, _, node in RenderTree(self.tree):
             treestr = u"%s%s" % (pre, node.name)
@@ -142,15 +144,9 @@ class AggTree():
             values[param] = self.TimeSeries.ValuesTree('', '', 1, children=[self._create_values_tree(row, self.params[param], '')])
         return row['datetime'], values
  
-    def modify_node(self, node: TimeSeries, dt: datetime, values):
-        for _values, _time_start in node.add_element(dt, values):
-            # insert it to childs
-            for child in node.children:
-                self.modify_node(child, _time_start, _values)
-
     def aggregate(self, row):
         datetime, values = self.select_params(row)
-        self.modify_node(self.tree, datetime, values)
+        self.tree.add(datetime, values)
 
     def filter(self, params: list, timeseries_name: list):
         result = AggResult()
@@ -190,7 +186,7 @@ class AggTree():
                         result[time_series_node.name].add(el, queues[el])
         return result
 
-        
+
 def load_tree(path):
     f = open(path)
     return load(f)
@@ -201,7 +197,7 @@ def load_params(path):
 
 def aggregate(tree_conf: str, params_conf: str, data_path: str):
     tree = AggTree(tree_conf, params_conf)
-
+    
     for (_, _, filenames) in walk(data_path):
         for filename in sorted(filenames):
             if filename.endswith('.parquet'):
@@ -218,16 +214,18 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                     try:
                         tree.aggregate(row)
                     except Exception as e:
-                        print(index, e)
                         pass
-
+                
                 tree.print()
 
-                tree.filter([['service', '']], ['10sec -> 1sec']).print()
+                ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
+
                 print('--------------------------------')
-                tree.filter([['service', '137']], ['10min -> 30sec']).print()
+                tree.filter([['src', '192.168.1.10']], ts).print()
                 print('--------------------------------')
-                tree.filter([['', '192.168.1.20'], ['', '44818']], ['2hours -> 20min', '1hour -> 5min']).print()
+                tree.filter([['service', '137']], ts).print()
+                print('--------------------------------')
+                tree.filter([['', '192.168.1.50'], ['service', '']], ts).print()
 
                 return
 

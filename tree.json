@@ -4,21 +4,16 @@
    "delta":"1s",
    "child":[
       {
-         "name":"10min -> 30sec",
+         "name":"10min -> 1min",
          "range":"10m",
-         "delta":"30s",
+         "delta":"1m",
          "child":[
             {
-               "name":"2hours -> 20min",
-               "range":"2h",
-               "delta":"20m"
+               "name":"5hour -> 30min",
+               "range":"5h",
+               "delta":"30m"
             }
          ]
-      },
-      {
-         "name":"1hour -> 5min",
-         "range":"1h",
-         "delta":"5m"
       }
    ]
 }

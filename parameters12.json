@@ -1,8 +1,10 @@
 [
    [
-      "src",
+      "service"
+   ],
+   [
+      "dst",
       [
-         "dst",
          "service"
       ]
    ],
