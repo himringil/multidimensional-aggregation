@@ -72,7 +72,7 @@ class AggTree():
                 else:
                     self._delete_zero_elements(child)
 
-        def add_element(self, dt: datetime, values):
+        def add(self, dt: datetime, values):
     
             # start queue if it is empty
             if not self.time_start:
@@ -83,7 +83,7 @@ class AggTree():
                 return
     
             if dt < self.time_start + self.time_range - self.time_delta:
-                #print(dt, self.time_start, self.time_range, self.time_delta, self.time_start + self.time_range - self.time_delta)
+                print(dt, self.time_start, self.time_range, self.time_delta, self.time_start + self.time_range - self.time_delta)
                 raise ValueError
     
             # pop elements from queue and insert into childs while new element time not reached
@@ -91,7 +91,8 @@ class AggTree():
                 old_values = dict()
                 for el in self.queue:
                     old_values[el] = self._oldest_values_to_values_tree(self.queue[el])
-                yield old_values, self.time_start
+                for child in self.children:
+                    child.add(self.time_start, old_values)
                 self.time_start += self.time_delta
     
             # new element belongs to last element of queue
@@ -105,7 +106,7 @@ class AggTree():
                     self.queue[el] = self.ValuesTree('', '', [0] * self.q)
                 else:
                     self._delete_zero_elements(self.queue[el])
-    
+
             return
 
     def __init__(self, tree: dict, params: list):
@@ -135,7 +136,7 @@ class AggTree():
                                time_range=timedelta(seconds=timeparse(js['range'])),
                                time_delta=timedelta(seconds=timeparse(js['delta'])),
                                children=[self._create_tree(c) for c in js.get('child', [])])
-                    
+
     def print(self):
         for pre, _, node in RenderTree(self.tree):
             treestr = u"%s%s" % (pre, node.name)
@@ -145,7 +146,7 @@ class AggTree():
                 for pre1, _, node1 in RenderTree(node.queue[el]):
                     treestr1 = u"%s%s" % (pre1, node1.name)
                     print(f'{" " * len(pre)}{treestr1.ljust(8)}:    {node1.value}\n')
-                    
+
     def _create_values_tree(self, row, param, prev):
         name = ' && '.join([f'{el}={row[el]}' for el in param if type(el) == str])
         fullname = ' | '.join([prev, name]) if prev else name
@@ -157,16 +158,10 @@ class AggTree():
         for param in self.params:
             values[param] = self.TimeSeries.ValuesTree('', '', 1, children=[self._create_values_tree(row, self.params[param], '')])
         return row['datetime'], values
- 
-    def modify_node(self, node: TimeSeries, dt: datetime, values):
-        for _values, _time_start in node.add_element(dt, values):
-            # insert it to childs
-            for child in node.children:
-                self.modify_node(child, _time_start, _values)
 
     def aggregate(self, row):
         datetime, values = self.select_params(row)
-        self.modify_node(self.tree, datetime, values)
+        self.tree.add(datetime, values)
 
     def filter(self, params: list, timeseries_name: list):
         result = AggResult()
@@ -195,7 +190,7 @@ class AggTree():
                             result[time_series_node.name].add(values_tree_node.fullname, values_tree_node.value)
         return result
 
-        
+
 def load_tree(path):
     f = open(path)
     return load(f)
@@ -223,10 +218,8 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                     try:
                         tree.aggregate(row)
                     except Exception as e:
-                        print(index, e)
-                        return
-                        #pass
-
+                        pass
+                
                 tree.print()
 
                 ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
