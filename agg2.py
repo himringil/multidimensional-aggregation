@@ -229,11 +229,14 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
 
                 tree.print()
 
-                tree.filter([['service', '']], ['10sec -> 1sec']).print()
+                ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
+
                 print('--------------------------------')
-                tree.filter([['service', '137']], ['10min -> 30sec']).print()
+                tree.filter([['src', '192.168.1.10']], ts).print()
                 print('--------------------------------')
-                tree.filter([['', '192.168.1.20'], ['', '44818']], ['2hours -> 20min', '1hour -> 5min']).print()
+                tree.filter([['service', '137']], ts).print()
+                print('--------------------------------')
+                tree.filter([['', '192.168.1.50'], ['service', '']], ts).print()
 
                 return
 
