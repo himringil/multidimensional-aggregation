@@ -157,7 +157,7 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                     try:
                         tree.aggregate(row)
                     except Exception as e:
-                        pass
+                        print(e)
                 
                 tree.print()
 

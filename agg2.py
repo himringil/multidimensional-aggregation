@@ -73,7 +73,7 @@ class AggTree():
                     self._delete_zero_elements(child)
 
         def add(self, dt: datetime, values):
-    
+
             # start queue if it is empty
             if not self.time_start:
                 for el in values:
@@ -106,8 +106,6 @@ class AggTree():
                     self.queue[el] = self.ValuesTree('', '', [0] * self.q)
                 else:
                     self._delete_zero_elements(self.queue[el])
-
-            return
 
     def __init__(self, tree: dict, params: list):
         # TODO: check params struct
@@ -218,7 +216,8 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                     try:
                         tree.aggregate(row)
                     except Exception as e:
-                        pass
+                        print(e)
+
                 
                 tree.print()
 
