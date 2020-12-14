@@ -10,6 +10,8 @@ from anytree import NodeMixin, RenderTree
 
 from AggResult import AggResult
 
+import time
+
 class AggTree():
 
     class TimeSeries(NodeMixin):
@@ -160,35 +162,94 @@ class AggTree():
     def aggregate(self, row):
         datetime, values = self.select_params(row)
         self.tree.add(datetime, values)
+    
+    def _is_sublist(self, sub_lst, lst):
+        return set(sub_lst) < set(lst)
+
+    def _gen_relatives(self, param, key, values):
+
+        sub_lst_params = param[0].split(' & ')
+        lst_params = param[1].split(' & ')
+
+        levels = key.split(' | ')
+        params = []
+        lvl_sub_lst = 0
+        lvl_lst = 0
+
+        result = dict()
+
+        for level in levels:
+
+            params += level.split(' & ')
+            
+            if not lvl_lst:
+                lvl_sub_lst += 1
+                if len(params) == len(sub_lst_params) and sorted(params) == sorted(sub_lst_params):
+                    lvl_lst = lvl_sub_lst
+                    continue 
+                if len(params) >= len(sub_lst_params):
+                    return result
+
+            else:
+                lvl_lst += 1
+                if len(params) == len(lst_params) and sorted(params) == sorted(lst_params):
+                    break
+                if len(params) >= len(lst_params):
+                    return result
+
+        return result
+
+        #for rel in relatives:
+        #    for sub_lst in rel[0]:
+        #        sub_lst_params = sub_lst.split(' & ')
+        #        for lst in rel[1]:
+        #            lst_params = lst.split(' & ')
+        #            if self._is_sublist(sub_lst_params, lst_params):
+        #                yield f'{lst} / {sub_lst}', [format(l/subl if subl else 0, '.3f') for subl, l in zip(rel[0][sub_lst], rel[1][lst])]
 
     def filter(self,  timeseries_name: list = [], absolute: list = [], relative: list = []):
         result = AggResult()
-        if not timeseries_name or (not absolute and not relative):
+        if not timeseries_name:
             return result
+
+        # delete bad relatives
+        relative = [[param[0], param[1]] for param in relative if self._is_sublist(param[0].split(' & '), param[1].split(' & '))]
 
         time_series_nodes = [self.tree]
         while time_series_nodes:
             time_series_node = time_series_nodes.pop(0)
             for child in time_series_node.children:
                 time_series_nodes.append(child)
+            
             # filter time series
             if time_series_node.name not in timeseries_name:
                 continue
+            
             result.add(time_series_node.name, time_series_node.time_start, time_series_node.time_range, time_series_node.time_delta)
+
             # filter queues
             for key in time_series_node.queue:
-                for param in absolute:
-                    if param[0] not in key:
-                        break
-                else:
-                    # name of queue contain all required params
-                    # need check every node in tree
-                    for values_tree_node in time_series_node.queue[key].descendants:
-                        for param in absolute:
-                            if f'{param[0]}={param[1]}' not in values_tree_node.fullname:
-                                break
-                        else:
-                            result[time_series_node.name].add(values_tree_node.fullname, values_tree_node.value)
+                
+                if absolute:
+                    # filter absolute
+                    for param in absolute:
+                        if param[0] not in key:
+                            break
+                    else:
+                        # name of queue contain all required params
+                        # need check every node in tree
+                        for values_tree_node in time_series_node.queue[key].descendants:
+                            for param in absolute:
+                                if f'{param[0]}={param[1]}' not in values_tree_node.fullname:
+                                    break
+                            else:
+                                result[time_series_node.name].add(values_tree_node.fullname, values_tree_node.value)
+
+                for param in relative:
+                    rel_result = self._gen_relatives(param, key, time_series_node.queue[key])
+                    for k in rel_result:
+                        result[time_series_node.name].add(k, rel_result[k])
+
         return result
 
 
@@ -220,18 +281,28 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         tree.aggregate(row)
                     except Exception as e:
                         print(e)
-
+                    if index == 3504799:
+                        break
                 
-                tree.print()
+                # tree.print()
 
-                ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
+                ts = ['10sec -> 1sec']
 
-                print('--------------------------------')
-                tree.filter(ts, [['src', '192.168.1.10']]).print()
-                print('--------------------------------')
-                tree.filter(ts, [['service', '137']]).print()
-                print('--------------------------------')
-                tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['src', '192.168.1.10']]).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['service', '137']]).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
+
+                start_time = time.time()
+                tree.filter(ts,
+                            #absolute=[['src', ''], ['dst', '']],
+                            relative=[['src', 'src & dst'],
+                                      ['dst', 'src & dst']
+                                     ])
+
+                print(time.time() - start_time)
 
                 return
 
