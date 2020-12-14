@@ -100,7 +100,7 @@ class AggTree():
     def select_params(self, row):
         values = dict()
         for param in self.params:
-            key = ' && '.join([f'{el}={row[el]}' for el in param]) if type(param) is list else f'{param}={row[param]}'
+            key = ' & '.join([f'{el}={row[el]}' for el in param]) if type(param) is list else f'{param}={row[param]}'
             values[key] = 1
         return row['datetime'], values
     
@@ -108,25 +108,64 @@ class AggTree():
         datetime, values = self.select_params(row)
         self.tree.add(datetime, values)
     
-    def filter(self, params: list, timeseries_name: list):
+    def _is_sublist(self, sub_lst, lst):
+        return set(sub_lst) < set(lst)
+
+    def _gen_relatives(self, relatives):
+        for rel in relatives:
+            for sub_lst in rel[0]:
+                sub_lst_params = sub_lst.split(' & ')
+                for lst in rel[1]:
+                    lst_params = lst.split(' & ')
+                    if self._is_sublist(sub_lst_params, lst_params):
+                        yield f'{sub_lst} / {lst}', [format(l/subl, '.3f') for subl, l in zip(rel[0][sub_lst], rel[1][lst])]
+
+    def filter(self, timeseries_name: list = [], absolute: list = [], relative: list = []):
         result = AggResult()
+        if not timeseries_name:
+            return result
+
+        # delete bad relatives
+        relative = [[sorted(param[0]), sorted(param[1])] for param in relative if self._is_sublist(param[0], param[1])]
+
         time_series_nodes = [self.tree]
         while time_series_nodes:
             time_series_node = time_series_nodes.pop(0)
             for child in time_series_node.children:
                 time_series_nodes.append(child)
+            
             # filter time series
             if time_series_node.name not in timeseries_name:
                 continue
+            
             result.add(time_series_node.name, time_series_node.time_start, time_series_node.time_range, time_series_node.time_delta)
+            rel_result = []
+            for i in relative:
+                rel_result.append([dict(), dict()])
+
             # filter queues
             for key in time_series_node.queue:
-                for param in params:
-                    if param[0] not in key or f'{param[0]}={param[1]}' not in key:
-                        break
-                else:
-                    # name of queue contain all requires params
-                    result[time_series_node.name].add(key, time_series_node.queue[key])
+                
+                if absolute:
+                    # filter absolute
+                    for param in absolute:
+                        if param[0] not in key or f'{param[0]}={param[1]}' not in key:
+                            break
+                    else:
+                        # name of queue contain all required params
+                        result[time_series_node.name].add(key, time_series_node.queue[key])
+
+                # filter relative
+                for i, param in enumerate(relative):
+                    keys = [k.split('=')[0] for k in key.split(' & ')]
+                    for j, p in enumerate(param):
+                        if len(keys) == len(p) and sorted(keys) == p:
+                            rel_result[i][j][key] = time_series_node.queue[key]
+                            break
+
+            for key, value in self._gen_relatives(rel_result):
+                result[time_series_node.name].add(key, value)
+
         return result
 
 
@@ -158,17 +197,25 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         tree.aggregate(row)
                     except Exception as e:
                         print(e)
+                    #if index == 3504799:
+                    #    break
                 
-                tree.print()
+                # tree.print()
 
-                ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
+                ts = ['10sec -> 1sec']
 
-                print('--------------------------------')
-                tree.filter([['src', '192.168.1.10']], ts).print()
-                print('--------------------------------')
-                tree.filter([['service', '137']], ts).print()
-                print('--------------------------------')
-                tree.filter([['', '192.168.1.50'], ['service', '']], ts).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['src', '192.168.1.10']]).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['service', '137']]).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
+
+                tree.filter(ts,
+                            absolute=[['src', ''], ['dst', '']],
+                            relative=[[['src'], ['src', 'dst']],
+                                      [['dst'], ['src', 'dst']]
+                                     ]).print()
 
                 return
 

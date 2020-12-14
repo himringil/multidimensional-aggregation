@@ -151,8 +151,11 @@ class AggTree():
         datetime, values = self.select_params(row)
         self.tree.add(datetime, values)
 
-    def filter(self, params: list, timeseries_name: list):
+    def filter(self, timeseries_name: list = [], absolute: list = [], relative: list = []):
         result = AggResult()
+        if not timeseries_name or (not absolute and not relative):
+            return result
+
         time_series_nodes = [self.tree]
         while time_series_nodes:
             time_series_node = time_series_nodes.pop(0)
@@ -164,16 +167,16 @@ class AggTree():
             result.add(time_series_node.name, time_series_node.time_start, time_series_node.time_range, time_series_node.time_delta)
             # filter queues
             for key in time_series_node.queue:
-                for param in params:
+                for param in absolute:
                     if param[0] not in key:
                         break
                 else:
-                    # name of queue contain all requires params
+                    # name of queue contain all required params
                     # need check every tree in queue
                     queues = dict()
                     for i, cur_tree in enumerate(time_series_node.queue[key]):
                         for values_tree_node in cur_tree.descendants:
-                            for param in params:
+                            for param in absolute:
                                 if f'{param[0]}={param[1]}' not in values_tree_node.fullname:
                                     break
                             else:
@@ -224,11 +227,11 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                 ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
 
                 print('--------------------------------')
-                tree.filter([['src', '192.168.1.10']], ts).print()
+                tree.filter(ts, [['src', '192.168.1.10']]).print()
                 print('--------------------------------')
-                tree.filter([['service', '137']], ts).print()
+                tree.filter(ts, [['service', '137']]).print()
                 print('--------------------------------')
-                tree.filter([['', '192.168.1.50'], ['service', '']], ts).print()
+                tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
 
                 return
 
