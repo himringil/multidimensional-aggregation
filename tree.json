@@ -1,6 +1,6 @@
 {
    "name":"10sec -> 1sec",
-   "range":"10s",
+   "range":"1000s",
    "delta":"1s",
    "child":[
       {

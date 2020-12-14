@@ -10,6 +10,8 @@ from anytree import NodeMixin, RenderTree
 
 from AggResult import AggResult
 
+import time
+
 class AggTree():
 
     class TimeSeries(NodeMixin):
@@ -118,7 +120,7 @@ class AggTree():
                 for lst in rel[1]:
                     lst_params = lst.split(' & ')
                     if self._is_sublist(sub_lst_params, lst_params):
-                        yield f'{lst} / {sub_lst}', [format(l/subl, '.3f') for subl, l in zip(rel[0][sub_lst], rel[1][lst])]
+                        yield f'{lst} / {sub_lst}', [format(l/subl if subl else 0, '.3f') for subl, l in zip(rel[0][sub_lst], rel[1][lst])]
 
     def filter(self, timeseries_name: list = [], absolute: list = [], relative: list = []):
         result = AggResult()
@@ -198,8 +200,8 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         tree.aggregate(row)
                     except Exception as e:
                         print(e)
-                    if index == 3504799:
-                        break
+                    #if index == 3504799:
+                    #    break
                 
                 # tree.print()
 
@@ -212,11 +214,14 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                 # print('--------------------------------')
                 # tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
 
+                start_time = time.time()
                 tree.filter(ts,
-                            absolute=[['src', ''], ['dst', '']],
+                            #absolute=[['src', ''], ['dst', '']],
                             relative=[['src', 'src & dst'],
                                       ['dst', 'src & dst']
-                                     ]).print()
+                                     ])
+
+                print(time.time() - start_time)
 
                 return
 
