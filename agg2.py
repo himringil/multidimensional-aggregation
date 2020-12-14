@@ -6,7 +6,7 @@ from pytimeparse.timeparse import timeparse
 from json import load
 
 import pandas as pd
-from anytree import NodeMixin, RenderTree
+from anytree import NodeMixin, RenderTree, LevelOrderGroupIter
 
 from AggResult import AggResult
 
@@ -166,7 +166,7 @@ class AggTree():
     def _is_sublist(self, sub_lst, lst):
         return set(sub_lst) < set(lst)
 
-    def _gen_relatives(self, param, key, values):
+    def _gen_relatives(self, param, key, root):
 
         sub_lst_params = param[0].split(' & ')
         lst_params = param[1].split(' & ')
@@ -183,6 +183,7 @@ class AggTree():
             params += level.split(' & ')
             
             if not lvl_lst:
+                # firstly find tree level which contain sublist
                 lvl_sub_lst += 1
                 if len(params) == len(sub_lst_params) and sorted(params) == sorted(sub_lst_params):
                     lvl_lst = lvl_sub_lst
@@ -191,21 +192,26 @@ class AggTree():
                     return result
 
             else:
+                # secondly find tree level which contain list
                 lvl_lst += 1
                 if len(params) == len(lst_params) and sorted(params) == sorted(lst_params):
                     break
                 if len(params) >= len(lst_params):
                     return result
 
-        return result
+        if lvl_sub_lst == lvl_lst:
+            return result
 
-        #for rel in relatives:
-        #    for sub_lst in rel[0]:
-        #        sub_lst_params = sub_lst.split(' & ')
-        #        for lst in rel[1]:
-        #            lst_params = lst.split(' & ')
-        #            if self._is_sublist(sub_lst_params, lst_params):
-        #                yield f'{lst} / {sub_lst}', [format(l/subl if subl else 0, '.3f') for subl, l in zip(rel[0][sub_lst], rel[1][lst])]
+        # get all tree nodes on sublists level
+        sub_lsts = list(LevelOrderGroupIter(root, maxlevel=lvl_sub_lst + 1))[-1]
+
+        for sub_lst in sub_lsts:
+            # get all tree nodes on lists level
+            lsts = list(LevelOrderGroupIter(sub_lst, maxlevel=lvl_lst - lvl_sub_lst + 1))[-1]
+            for lst in lsts:
+                result[f'{lst.fullname} / {sub_lst.fullname}'] = [format(l/subl if subl else 0, '.3f') for subl, l in zip(sub_lst.value, lst.value)]
+
+        return result
 
     def filter(self,  timeseries_name: list = [], absolute: list = [], relative: list = []):
         result = AggResult()
@@ -281,8 +287,8 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         tree.aggregate(row)
                     except Exception as e:
                         print(e)
-                    if index == 3504799:
-                        break
+                    #if index == 3504799:
+                    #    break
                 
                 # tree.print()
 
