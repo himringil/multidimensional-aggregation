@@ -109,14 +109,14 @@ class AggTree():
         graph = nx.DiGraph()
         
         for param in self.params:
-            key = ' && '.join([f'{el}={row[el]}' for el in param]) if type(param) is list else f'{param}={row[param]}'
+            key = ' & '.join([f'{el}={row[el]}' for el in param]) if type(param) is list else f'{param}={row[param]}'
             values[key] = 1
             graph.add_node(key)
         
         for node1 in graph.nodes:
             for node2 in graph.nodes:
                 if node1 != node2:
-                    ps = node2.split(' && ')
+                    ps = node2.split(' & ')
                     for p in ps:
                         if node1.find(p) == -1:
                             break
@@ -130,28 +130,63 @@ class AggTree():
         datetime, values, graph = self.select_params(row)
         self.tree.add(datetime, values, graph)
     
+    def _is_sublist(self, sub_lst, lst):
+        return set(sub_lst) < set(lst)
+
+    def _gen_relatives(self, relatives, graph: nx.DiGraph, queue: list):
+        for rel in relatives:
+            lst_params = rel[1].split(' & ')
+            for sub_lst in rel[0]:
+                for edge in graph.in_edges(sub_lst):
+                    neightbor = [n.split('=')[0] for n in edge[0].split(' & ')]
+                    if len(neightbor) == len(lst_params) and sorted(neightbor) == sorted(lst_params):
+                        yield f'{edge[0]} / {sub_lst}', [format(l/subl, '.3f') for subl, l in zip(rel[0][sub_lst], queue[edge[0]])]
+
     def filter(self,  timeseries_name: list = [], absolute: list = [], relative: list = []):
         result = AggResult()
-        if not timeseries_name or (not absolute and not relative):
+        if not timeseries_name:
             return result
+
+        # delete bad relatives
+        relative = [[param[0], param[1]] for param in relative if self._is_sublist(param[0].split(' & '), param[1].split(' & '))]
 
         time_series_nodes = [self.tree]
         while time_series_nodes:
             time_series_node = time_series_nodes.pop(0)
             for child in time_series_node.children:
                 time_series_nodes.append(child)
+            
             # filter time series
             if time_series_node.name not in timeseries_name:
                 continue
+            
             result.add(time_series_node.name, time_series_node.time_start, time_series_node.time_range, time_series_node.time_delta)
+            rel_result = []
+            for i in relative:
+                rel_result.append([dict(), i[1]])
+
             # filter queues
             for key in time_series_node.queue:
-                for param in absolute:
-                    if param[0] not in key or f'{param[0]}={param[1]}' not in key:
-                        break
-                else:
-                    # name of queue contain all required params
-                    result[time_series_node.name].add(key, time_series_node.queue[key])
+                
+                if absolute:
+                    # filter absolute
+                    for param in absolute:
+                        if param[0] not in key or f'{param[0]}={param[1]}' not in key:
+                            break
+                    else:
+                        # name of queue contain all required params
+                        result[time_series_node.name].add(key, time_series_node.queue[key])
+
+                # filter relative
+                for i, param in enumerate(relative):
+                    keys = [k.split('=')[0] for k in key.split(' & ')]
+                    p_lst = param[0].split(' & ')
+                    if len(keys) == len(p_lst) and sorted(keys) == sorted(p_lst):
+                        rel_result[i][0][key] = time_series_node.queue[key]
+
+            for key, value in self._gen_relatives(rel_result, time_series_node.graph, time_series_node.queue):
+                result[time_series_node.name].add(key, value)
+
         return result
 
 
@@ -183,18 +218,25 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         tree.aggregate(row)
                     except Exception as e:
                         print(e)
-
+                    if index == 3504799:
+                        break
                 
-                tree.print()
+                # tree.print()
 
-                ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
+                ts = ['10sec -> 1sec']
 
-                print('--------------------------------')
-                tree.filter(ts, [['src', '192.168.1.10']]).print()
-                print('--------------------------------')
-                tree.filter(ts, [['service', '137']]).print()
-                print('--------------------------------')
-                tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['src', '192.168.1.10']]).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['service', '137']]).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
+
+                tree.filter(ts,
+                            absolute=[['src', ''], ['dst', '']],
+                            relative=[['src', 'src & dst'],
+                                      ['dst', 'src & dst']
+                                     ]).print()
 
                 return
 

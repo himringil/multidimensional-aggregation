@@ -118,7 +118,7 @@ class AggTree():
                 for lst in rel[1]:
                     lst_params = lst.split(' & ')
                     if self._is_sublist(sub_lst_params, lst_params):
-                        yield f'{sub_lst} / {lst}', [format(l/subl, '.3f') for subl, l in zip(rel[0][sub_lst], rel[1][lst])]
+                        yield f'{lst} / {sub_lst}', [format(l/subl, '.3f') for subl, l in zip(rel[0][sub_lst], rel[1][lst])]
 
     def filter(self, timeseries_name: list = [], absolute: list = [], relative: list = []):
         result = AggResult()
@@ -126,7 +126,7 @@ class AggTree():
             return result
 
         # delete bad relatives
-        relative = [[sorted(param[0]), sorted(param[1])] for param in relative if self._is_sublist(param[0], param[1])]
+        relative = [[param[0], param[1]] for param in relative if self._is_sublist(param[0].split(' & '), param[1].split(' & '))]
 
         time_series_nodes = [self.tree]
         while time_series_nodes:
@@ -159,7 +159,8 @@ class AggTree():
                 for i, param in enumerate(relative):
                     keys = [k.split('=')[0] for k in key.split(' & ')]
                     for j, p in enumerate(param):
-                        if len(keys) == len(p) and sorted(keys) == p:
+                        p_lst = p.split(' & ')
+                        if len(keys) == len(p_lst) and sorted(keys) == sorted(p_lst):
                             rel_result[i][j][key] = time_series_node.queue[key]
                             break
 
@@ -197,8 +198,8 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         tree.aggregate(row)
                     except Exception as e:
                         print(e)
-                    #if index == 3504799:
-                    #    break
+                    if index == 3504799:
+                        break
                 
                 # tree.print()
 
@@ -213,8 +214,8 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
 
                 tree.filter(ts,
                             absolute=[['src', ''], ['dst', '']],
-                            relative=[[['src'], ['src', 'dst']],
-                                      [['dst'], ['src', 'dst']]
+                            relative=[['src', 'src & dst'],
+                                      ['dst', 'src & dst']
                                      ]).print()
 
                 return
