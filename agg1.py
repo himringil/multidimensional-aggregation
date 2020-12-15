@@ -6,9 +6,11 @@ from pytimeparse.timeparse import timeparse
 from json import load
 
 import pandas as pd
-from anytree import NodeMixin, RenderTree
+from anytree import NodeMixin, RenderTree, LevelOrderGroupIter
 
 from AggResult import AggResult
+
+import time
 
 class AggTree():
 
@@ -146,50 +148,137 @@ class AggTree():
         for param in self.params:
             values[param] = self.TimeSeries.ValuesTree('', '', 1, children=[self._create_values_tree(row, self.params[param], '')])
         return row['datetime'], values
- 
+
     def aggregate(self, row):
         datetime, values = self.select_params(row)
         self.tree.add(datetime, values)
+    
+    def _is_sublist(self, sub_lst, lst):
+        return set(sub_lst) < set(lst)
+
+    def _gen_relatives(self, param, key, trees):
+
+        sub_lst_params = param[0].split(' & ')
+        lst_params = param[1].split(' & ')
+
+        levels = key.split(' | ')
+        params = []
+        lvl_sub_lst = 0
+        lvl_lst = 0
+
+        result = dict()
+
+        for level in levels:
+
+            params += level.split(' & ')
+            
+            if not lvl_lst:
+                # firstly find tree level which contain sublist
+                lvl_sub_lst += 1
+                if len(params) == len(sub_lst_params) and sorted(params) == sorted(sub_lst_params):
+                    lvl_lst = lvl_sub_lst
+                    continue 
+                if len(params) >= len(sub_lst_params):
+                    return result
+
+            else:
+                # secondly find tree level which contain list
+                lvl_lst += 1
+                if len(params) == len(lst_params) and sorted(params) == sorted(lst_params):
+                    break
+                if len(params) >= len(lst_params):
+                    return result
+
+        if lvl_sub_lst == lvl_lst:
+            return result
+
+        for i, tree in enumerate(trees):
+
+            # get all tree nodes on sublists level
+            sub_lsts = list(LevelOrderGroupIter(tree, maxlevel=lvl_sub_lst + 1))[-1]
+            
+            for sub_lst in sub_lsts:
+                # get all tree nodes on lists level
+                lsts = list(LevelOrderGroupIter(sub_lst, maxlevel=lvl_lst - lvl_sub_lst + 1))[-1]
+
+                for lst in lsts:
+                    # create empty list if it not exists
+                    if f'{lst.fullname} / {sub_lst.fullname}' not in result.keys():
+                        result[f'{lst.fullname} / {sub_lst.fullname}'] = []
+                    # add zero elements to list if it contain gaps
+                    if len(result[f'{lst.fullname} / {sub_lst.fullname}']) < i:
+                        result[f'{lst.fullname} / {sub_lst.fullname}'] += [0] * (i - len(result[f'{lst.fullname} / {sub_lst.fullname}']))
+                    # add new element to list
+                    result[f'{lst.fullname} / {sub_lst.fullname}'].append(format(lst.value/sub_lst.value if sub_lst.value else 0, '.3f'))
+
+        for el in result:
+            # add zero elements to list if it not full
+            if len(result[el]) < len(trees):
+                result[el] += [0] * (len(trees) - len(result[el]))
+            assert len(result[el]) == len(trees)
+
+        return result
 
     def filter(self, timeseries_name: list = [], absolute: list = [], relative: list = []):
         result = AggResult()
-        if not timeseries_name or (not absolute and not relative):
+        if not timeseries_name:
             return result
+
+        # delete bad relatives
+        relative = [[param[0], param[1]] for param in relative if self._is_sublist(param[0].split(' & '), param[1].split(' & '))]
 
         time_series_nodes = [self.tree]
         while time_series_nodes:
             time_series_node = time_series_nodes.pop(0)
             for child in time_series_node.children:
                 time_series_nodes.append(child)
+            
             # filter time series
             if time_series_node.name not in timeseries_name:
                 continue
+            
             result.add(time_series_node.name, time_series_node.time_start, time_series_node.time_range, time_series_node.time_delta)
+
             # filter queues
             for key in time_series_node.queue:
-                for param in absolute:
-                    if param[0] not in key:
-                        break
-                else:
-                    # name of queue contain all required params
-                    # need check every tree in queue
-                    queues = dict()
-                    for i, cur_tree in enumerate(time_series_node.queue[key]):
-                        for values_tree_node in cur_tree.descendants:
-                            for param in absolute:
-                                if f'{param[0]}={param[1]}' not in values_tree_node.fullname:
-                                    break
-                            else:
-                                if values_tree_node.fullname not in queues.keys():
-                                    queues[values_tree_node.fullname] = []
-                                if len(queues[values_tree_node.fullname]) < i:
-                                    queues[values_tree_node.fullname] += [0] * (i - len(queues[values_tree_node.fullname]))
-                                queues[values_tree_node.fullname].append(values_tree_node.value)
-                    for el in queues:
-                        if len(queues[el]) < len(time_series_node.queue[key]):
-                            queues[el] += [0] * (len(time_series_node.queue[key]) - len(queues[el]))
-                        assert len(queues[el]) == len(time_series_node.queue[key])
-                        result[time_series_node.name].add(el, queues[el])
+                
+                if absolute:
+                    # filter absolute
+                    for param in absolute:
+                        if param[0] not in key:
+                            break
+
+                    else:
+                        # name of queue contain all required params
+                        # need check every tree in queue
+                        queues = dict()
+                        for i, cur_tree in enumerate(time_series_node.queue[key]):
+                            for values_tree_node in cur_tree.descendants:
+                                for param in absolute:
+                                    if f'{param[0]}={param[1]}' not in values_tree_node.fullname:
+                                        break
+                                else:
+                                    # create empty list if it not exists
+                                    if values_tree_node.fullname not in queues.keys():
+                                        queues[values_tree_node.fullname] = []
+                                    # add zero elements to list if it contain gaps
+                                    if len(queues[values_tree_node.fullname]) < i:
+                                        queues[values_tree_node.fullname] += [0] * (i - len(queues[values_tree_node.fullname]))
+                                    # add new element to list
+                                    queues[values_tree_node.fullname].append(values_tree_node.value)
+
+                        for el in queues:
+                            # add zero elements to list if it not full
+                            if len(queues[el]) < len(time_series_node.queue[key]):
+                                queues[el] += [0] * (len(time_series_node.queue[key]) - len(queues[el]))
+                            assert len(queues[el]) == len(time_series_node.queue[key])
+                            result[time_series_node.name].add(el, queues[el])
+
+                for param in relative:
+                    rel_result = self._gen_relatives(param, key, time_series_node.queue[key])
+                    for k in rel_result:
+                        result[time_series_node.name].add(k, rel_result[k])
+
         return result
 
 
@@ -203,7 +292,7 @@ def load_params(path):
 
 def aggregate(tree_conf: str, params_conf: str, data_path: str):
     tree = AggTree(tree_conf, params_conf)
-    
+
     for (_, _, filenames) in walk(data_path):
         for filename in sorted(filenames):
             if filename.endswith('.parquet'):
@@ -221,17 +310,28 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         tree.aggregate(row)
                     except Exception as e:
                         print(e)
+                    if index == 3504799:
+                        break
                 
-                tree.print()
+                # tree.print()
 
-                ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
+                ts = ['10sec -> 1sec']
 
-                print('--------------------------------')
-                tree.filter(ts, [['src', '192.168.1.10']]).print()
-                print('--------------------------------')
-                tree.filter(ts, [['service', '137']]).print()
-                print('--------------------------------')
-                tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['src', '192.168.1.10']]).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['service', '137']]).print()
+                # print('--------------------------------')
+                # tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
+
+                start_time = time.time()
+                tree.filter(ts,
+                            #absolute=[['src', ''], ['dst', '']],
+                            relative=[['src', 'src & dst'],
+                                      ['dst', 'src & dst']
+                                     ]).print()
+
+                print(time.time() - start_time)
 
                 return
 
