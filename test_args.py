@@ -97,4 +97,4 @@ def test(time_range):
 
 if __name__ == '__main__':
 
-    test(argv[1])
+    test(int(argv[1]))
