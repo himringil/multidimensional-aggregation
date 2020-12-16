@@ -7,7 +7,6 @@ from json import load
 
 import pandas as pd
 from anytree import NodeMixin, RenderTree
-import networkx as nx
 
 from AggResult import AggResult
 
@@ -30,7 +29,7 @@ class AggTree():
             self.time_start = None
     
             self.queue = dict()
-            self.graph = nx.DiGraph()
+            self.graph = dict()
     
             self.parent = parent
             if children:
@@ -40,9 +39,23 @@ class AggTree():
             for key in list(self.queue.keys()):
                 if sum(self.queue[key]) == 0:
                     self.queue.pop(key)
-                    self.graph.remove_node(key)
 
-        def add(self, dt: datetime, values, graph):
+                    # remove node from graph
+                    self.graph.pop(key)
+                    for graph_key in self.graph.keys():
+                        if key in self.graph[graph_key]:
+                            self.graph[graph_key].remove(key)
+
+        def _append_graph(self, graph: dict):
+            for key in graph.keys():
+                if key not in self.graph.keys():
+                    self.graph[key] = graph[key].copy()
+                    continue
+                for value in graph[key]:
+                    if value not in self.graph[key]:
+                        self.graph[key].append(value)
+
+        def add(self, dt: datetime, values, graph: dict):
     
             # start queue if it is empty
             if not self.time_start:
@@ -65,8 +78,19 @@ class AggTree():
                     if value:
                         old_values[el] = value
                     self.queue[el].append(0)
+
+                # filter graph
+                old_graph = dict()
+                for key in self.graph.keys():
+                    if key in old_values.keys():
+                        old_graph[key] = []
+                        for value in self.graph[key]:
+                            if value in old_values.keys():
+                                old_graph[key].append(value)
+
                 for child in self.children:
-                    child.add(self.time_start, old_values, self.graph)
+                    child.add(self.time_start, old_values, old_graph)
+
                 self.time_start += self.time_delta
     
             # new element belongs to last element of queue
@@ -74,7 +98,7 @@ class AggTree():
                 if not self.queue.get(el):
                     self.queue[el] = [0] * self.q
                 self.queue[el][-1] += values[el]
-            self.graph = nx.compose(self.graph, graph)
+            self._append_graph(graph)
     
             self._delete_zero_elements()
 
@@ -100,23 +124,24 @@ class AggTree():
     def print(self):
         for pre, _, node in RenderTree(self.tree):
             treestr = u"%s%s" % (pre, node.name)
-            print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}'
-                    f' nodes={node.graph.number_of_nodes()} edges={node.graph.number_of_edges()}')
+            print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta} nodes={len(node.graph.keys())}')
             for el in sorted(node.queue):
                 print(f'{" " * len(pre)}{el}: {node.queue[el]}')
+            for el in node.graph:
+                print(f'    {el}: {node.graph[el]}')
 
     def select_params(self, row):
     
         values = dict()
-        graph = nx.DiGraph()
+        graph = dict()
         
         for param in self.params:
             key = ' & '.join([f'{el}={row[el]}' for el in param]) if type(param) is list else f'{param}={row[param]}'
             values[key] = 1
-            graph.add_node(key)
-        
-        for node1 in graph.nodes:
-            for node2 in graph.nodes:
+            graph[key] = []
+
+        for node1 in graph.keys():
+            for node2 in graph.keys():
                 if node1 != node2:
                     ps = node2.split(' & ')
                     for p in ps:
@@ -124,7 +149,7 @@ class AggTree():
                             break
                     else:
                         # node1 contain all parameters from node2
-                        graph.add_edge(node1, node2)
+                        graph[node2].append(node1)
         
         return row['datetime'], values, graph
     
@@ -135,14 +160,14 @@ class AggTree():
     def _is_sublist(self, sub_lst, lst):
         return set(sub_lst) < set(lst)
 
-    def _gen_relatives(self, relatives, graph: nx.DiGraph, queue: list):
+    def _gen_relatives(self, relatives, graph: dict, queue: list):
         for rel in relatives:
             lst_params = rel[1].split(' & ')
             for sub_lst in rel[0]:
-                for edge in graph.in_edges(sub_lst):
-                    neightbor = [n.split('=')[0] for n in edge[0].split(' & ')]
-                    if len(neightbor) == len(lst_params) and sorted(neightbor) == sorted(lst_params):
-                        yield f'{edge[0]} / {sub_lst}', [format(l/subl if subl else 0, '.3f') for subl, l in zip(rel[0][sub_lst], queue[edge[0]])]
+                for neightbor in graph[sub_lst]:
+                    neightbor_params = [n.split('=')[0] for n in neightbor.split(' & ')]
+                    if len(neightbor_params) == len(lst_params) and sorted(neightbor_params) == sorted(lst_params):
+                        yield f'{neightbor} / {sub_lst}', [format(l/subl if subl else 0, '.3f') for subl, l in zip(rel[0][sub_lst], queue[neightbor])]
 
     def filter(self,  timeseries_name: list = [], absolute: list = [], relative: list = []):
         result = AggResult()
@@ -219,30 +244,30 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                     try:
                         tree.aggregate(row)
                     except Exception as e:
-                        print(e)
-                    #if index == 3504799:
-                    #    break
+                        print(index, e)
+                    # if index == 3504799:
+                    #     break
                 
-                # tree.print()
+                tree.print()
 
-                ts = ['10sec -> 1sec']
+                ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
 
-                # print('--------------------------------')
-                # tree.filter(ts, [['src', '192.168.1.10']]).print()
-                # print('--------------------------------')
-                # tree.filter(ts, [['service', '137']]).print()
-                # print('--------------------------------')
-                # tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
+                #print('--------------------------------')
+                #tree.filter(ts, [['src', '192.168.1.10']]).print()
+                #print('--------------------------------')
+                #tree.filter(ts, [['service', '137']]).print()
+                #print('--------------------------------')
+                #tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
 
-                start_time = time.time()
-
-                tree.filter(ts,
-                            #absolute=[['src', ''], ['dst', '']],
-                            relative=[['src', 'src & dst'],
-                                      ['dst', 'src & dst']
-                                     ])
-
-                print(time.time() - start_time)
+                # start_time = time.time()
+                # 
+                # tree.filter(ts,
+                #             absolute=[['src', ''], ['dst', '']],
+                #             relative=[['src', 'src & dst'],
+                #                       ['dst', 'src & dst']
+                #                      ]).print()
+                # 
+                # print(time.time() - start_time)
 
                 return
 
