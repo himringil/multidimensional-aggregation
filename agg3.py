@@ -127,8 +127,8 @@ class AggTree():
             print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta} nodes={len(node.graph.keys())}')
             for el in sorted(node.queue):
                 print(f'{" " * len(pre)}{el}: {node.queue[el]}')
-            for el in node.graph:
-                print(f'    {el}: {node.graph[el]}')
+            # for el in node.graph:
+            #     print(f'    {el}: {node.graph[el]}')
 
     def select_params(self, row):
     
@@ -245,35 +245,16 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         tree.aggregate(row)
                     except Exception as e:
                         print(index, e)
-                    # if index == 3504799:
-                    #     break
                 
-                tree.print()
-
-                ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
-
-                #print('--------------------------------')
-                #tree.filter(ts, [['src', '192.168.1.10']]).print()
-                #print('--------------------------------')
-                #tree.filter(ts, [['service', '137']]).print()
-                #print('--------------------------------')
-                #tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
-
-                # start_time = time.time()
-                # 
-                # tree.filter(ts,
-                #             absolute=[['src', ''], ['dst', '']],
-                #             relative=[['src', 'src & dst'],
-                #                       ['dst', 'src & dst']
-                #                      ]).print()
-                # 
-                # print(time.time() - start_time)
-
-                return
+                yield tree
 
 if __name__ == '__main__':
 
     if len(argv) < 4:
         raise Exception('args: <tree_config_path> <params_config_path> <data_folder_path>')
 
-    aggregate(load_tree(argv[1]), load_params(argv[2]), argv[3])
+    for i, tree in enumerate(aggregate(load_tree(argv[1]), load_params(argv[2]), argv[3])):
+        tree.print()
+        print('--------------------------------')
+        if i == 2:
+            break
