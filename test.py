@@ -36,55 +36,60 @@ def test():
                           )
     f = open('test_result.txt', 'w')
 
-    for range, n in zip(ranges, n_files):
-        tree_conf['range'] = f'{range}s'
+    for time_range, n in zip(ranges, n_files):
+
+        tree_conf['range'] = f'{time_range}s'
+
         for agg, i in zip([agg0, agg1, agg2, agg3], [ 0, 1, 1, 0 ]):
-            print(f'{datetime.datetime.now()} -> {agg.__name__}')
+
+            print(f'{datetime.datetime.now()} -> {agg.__name__} (time_range={time_range})')
             cnt = 0
             for tree in agg.aggregate(tree_conf, params_conf[i], data_path):
+
                 cnt += 1
                 if cnt == n:
 
                     # sum size of queues
-                    print(agg.__name__ == agg3.__name__)
-                    result[range][agg.__name__]['sum_size'] = asizeof.asizeof(tree.tree.queue) + (asizeof.asizeof(tree.tree.graph) if agg.__name__ == agg3.__name__ else 0)
-                    print(f'{range}, {agg.__name__}, sum_size, {result[range][agg.__name__]["sum_size"]}')
-                    f.write(f'{range}, {agg.__name__}, sum_size, {result[range][agg.__name__]["sum_size"]}')
+                    result[time_range][agg.__name__]['sum_size'] = asizeof.asizeof(tree.tree.queue) + (asizeof.asizeof(tree.tree.graph) if agg.__name__ == agg3.__name__ else 0)
+                    print(f'{time_range}, {agg.__name__}, sum_size, {result[time_range][agg.__name__]["sum_size"]}')
+                    f.write(f'{time_range}, {agg.__name__}, sum_size, {result[time_range][agg.__name__]["sum_size"]}\n')
                     f.flush()
                     
                     # average size of queue
-                    result[range][agg.__name__]['avg_size'] = result[range][agg.__name__]['sum_size'] / len(tree.tree.queue)
-                    print(f'{range}, {agg.__name__}, avg_size, {result[range][agg.__name__]["avg_size"]}')
-                    f.write(f'{range}, {agg.__name__}, avg_size, {result[range][agg.__name__]["avg_size"]}')
+                    result[time_range][agg.__name__]['avg_size'] = int(result[time_range][agg.__name__]['sum_size'] / len(tree.tree.queue))
+                    print(f'{time_range}, {agg.__name__}, avg_size, {result[time_range][agg.__name__]["avg_size"]}')
+                    f.write(f'{time_range}, {agg.__name__}, avg_size, {result[time_range][agg.__name__]["avg_size"]}\n')
                     f.flush()
 
                     # filter absolute
-                    summ = 0
+                    result[time_range][agg.__name__]['abs_time'] = datetime.timedelta(0)
                     for _ in range(cnt_tests):
                         tm = datetime.datetime.now()
                         tree.filter(['1second'],
                                     absolute=[['src', ''], ['dst', '']])
-                        summ += (datetime.datetime.now() - tm)
-                    result[range][agg.__name__]['abs_time'] = summ / cnt_tests
-                    print(f'{range}, {agg.__name__}, abs_time, {result[range][agg.__name__]["abs_time"]}')
-                    f.write(f'{range}, {agg.__name__}, abs_time, {result[range][agg.__name__]["abs_time"]}')
+                        result[time_range][agg.__name__]['abs_time'] += (datetime.datetime.now() - tm)
+                    result[time_range][agg.__name__]['abs_time'] /= cnt_tests
+                    print(f'{time_range}, {agg.__name__}, abs_time, {result[time_range][agg.__name__]["abs_time"]}')
+                    f.write(f'{time_range}, {agg.__name__}, abs_time, {result[time_range][agg.__name__]["abs_time"]}\n')
                     f.flush()
 
                     # filter relative
-                    summ = 0
-                    for i in range(cnt_tests):
+                    result[time_range][agg.__name__]['rel_time'] = datetime.timedelta(0)
+                    for _ in range(cnt_tests):
                         tm = datetime.datetime.now()
                         tree.filter(['1second'],
                                     relative=[['src', 'src & dst'],
                                               ['dst', 'src & dst']
                                              ])
-                        summ += (datetime.datetime.now() - tm)
-                    result[range][agg.__name__]['rel_time'] = summ / cnt_tests
-                    print(f'{range}, {agg.__name__}, rel_time, {result[range][agg.__name__]["rel_time"]}')
-                    f.write(f'{range}, {agg.__name__}, rel_time, {result[range][agg.__name__]["rel_time"]}')
+                        result[time_range][agg.__name__]['rel_time'] += (datetime.datetime.now() - tm)
+                    result[time_range][agg.__name__]['rel_time'] /= cnt_tests
+                    print(f'{time_range}, {agg.__name__}, rel_time, {result[time_range][agg.__name__]["rel_time"]}')
+                    f.write(f'{time_range}, {agg.__name__}, rel_time, {result[time_range][agg.__name__]["rel_time"]}\n')
                     f.flush()
 
                     break
+
+            print('')
 
     f.close()
 
