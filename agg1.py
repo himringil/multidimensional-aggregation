@@ -304,22 +304,20 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                 df.rename(columns={'i/f_name' : 'if_name', 'i/f_dir' : 'if_dir'}, inplace=True)
     
                 for index, row in df.iterrows():
-                    if not row['src']:
+                    if not row['src'] or not row['dst']:
                         continue
                     try:
                         tree.aggregate(row)
                     except Exception as e:
-                        print(index, e)
+                        print(f'Exception at {index}: {e}')
+        break
 
-                yield tree
+    return tree
 
 if __name__ == '__main__':
 
     if len(argv) < 4:
         raise Exception('args: <tree_config_path> <params_config_path> <data_folder_path>')
 
-    for i, tree in enumerate(aggregate(load_tree(argv[1]), load_params(argv[2]), argv[3])):
-        tree.print()
-        print('--------------------------------')
-        if i == 2:
-            break
+    tree = aggregate(load_tree(argv[1]), load_params(argv[2]), argv[3])
+    tree.print()
