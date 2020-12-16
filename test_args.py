@@ -1,4 +1,4 @@
-import argv
+from sys import argv
 import datetime
 
 import agg0, agg1, agg2, agg3
