@@ -245,9 +245,9 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         tree.aggregate(row)
                     except Exception as e:
                         print(f'Exception at {index}: {e}')
+
+                yield tree
         break
-                
-    return tree
 
 if __name__ == '__main__':
 
