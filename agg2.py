@@ -74,6 +74,13 @@ class AggTree():
                 else:
                     self._delete_zero_elements(child)
 
+        def delete_zero_elements(self):
+            for el in self.queue:
+                if sum(self.queue[el].value) == 0:
+                    self.queue[el] = self.ValuesTree('', '', [0] * self.q)
+                else:
+                    self._delete_zero_elements(self.queue[el])
+
         def add(self, dt: datetime, values):
 
             # start queue if it is empty
@@ -102,12 +109,6 @@ class AggTree():
                 if not self.queue.get(el):
                     self.queue[el] = self.ValuesTree('', '', [0] * self.q)
                 self._merge_trees([self.queue[el]], values[el])
-    
-            for el in self.queue:
-                if sum(self.queue[el].value) == 0:
-                    self.queue[el] = self.ValuesTree('', '', [0] * self.q)
-                else:
-                    self._delete_zero_elements(self.queue[el])
 
     def __init__(self, tree: dict, params: list):
         # TODO: check params struct
@@ -280,15 +281,23 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                 df.drop(axis=1, columns=['date', 'time'], inplace=True)
                 df.rename(columns={'i/f_name' : 'if_name', 'i/f_dir' : 'if_dir'}, inplace=True)
     
+                print(f'    {datetime.now()} -> {filename} ({len(df.index)} rows)')
+    
+                td = timedelta(0)
+
                 for index, row in df.iterrows():
+                    tm = datetime.now()
                     if not row['src'] or not row['dst']:
                         continue
                     try:
                         tree.aggregate(row)
                     except Exception as e:
                         print(f'Exception at {index}: {e}')
+                    td += (datetime.now() - tm)
 
-                yield tree
+                tree.tree.delete_zero_elements()
+
+                yield tree, td
         break
 
 if __name__ == '__main__':

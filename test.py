@@ -29,7 +29,7 @@ def test():
 
     result = dict.fromkeys(ranges,
                            dict.fromkeys([agg.__name__ for agg in [agg0, agg1, agg2, agg3]],
-                                         dict.fromkeys(['sum_size', 'avg_size', 'abs_time', 'rel_time'],
+                                         dict.fromkeys(['agg_time', 'sum_size', 'avg_size', 'abs_time', 'rel_time'],
                                                        None
                                                       )
                                         )
@@ -42,12 +42,21 @@ def test():
 
         for agg, i in zip([agg0, agg1, agg2, agg3], [ 0, 1, 1, 0 ]):
 
-            print(f'{datetime.datetime.now()} -> {agg.__name__} (time_range={time_range})')
-            cnt = 0
-            for tree in agg.aggregate(tree_conf, params_conf[i], data_path):
+            print(f'{datetime.datetime.now()} -> {agg.__name__} (time_range={time_range}, {n} files)')
+            result[time_range][agg.__name__]['agg_time'] = datetime.timedelta(0)
 
-                cnt += 1
-                if cnt == n:
+            for cnt, (tree, td) in enumerate(agg.aggregate(tree_conf, params_conf[i], data_path)):
+
+                result[time_range][agg.__name__]['agg_time'] += td
+
+                if cnt + 1 == n:
+                    
+                    # time to aggregate 500000 elements
+                    result[time_range][agg.__name__]['agg_time'] /= n
+                    result[time_range][agg.__name__]['agg_time'] = result[time_range][agg.__name__]['agg_time'].total_seconds() * 1000  # ms
+                    print(f'{time_range}, {agg.__name__}, agg_time, {result[time_range][agg.__name__]["agg_time"]}')
+                    f.write(f'{time_range}, {agg.__name__}, agg_time, {result[time_range][agg.__name__]["agg_time"]}\n')
+                    f.flush()
 
                     # sum size of queues
                     result[time_range][agg.__name__]['sum_size'] = asizeof.asizeof(tree.tree.queue) + (asizeof.asizeof(tree.tree.graph) if agg.__name__ == agg3.__name__ else 0)
@@ -69,6 +78,7 @@ def test():
                                     absolute=[['src', ''], ['dst', '']])
                         result[time_range][agg.__name__]['abs_time'] += (datetime.datetime.now() - tm)
                     result[time_range][agg.__name__]['abs_time'] /= cnt_tests
+                    result[time_range][agg.__name__]['abs_time'] = result[time_range][agg.__name__]['abs_time'].total_seconds() * 1000
                     print(f'{time_range}, {agg.__name__}, abs_time, {result[time_range][agg.__name__]["abs_time"]}')
                     f.write(f'{time_range}, {agg.__name__}, abs_time, {result[time_range][agg.__name__]["abs_time"]}\n')
                     f.flush()
@@ -83,13 +93,14 @@ def test():
                                              ])
                         result[time_range][agg.__name__]['rel_time'] += (datetime.datetime.now() - tm)
                     result[time_range][agg.__name__]['rel_time'] /= cnt_tests
+                    result[time_range][agg.__name__]['rel_time'] = result[time_range][agg.__name__]['rel_time'].total_seconds() * 1000
                     print(f'{time_range}, {agg.__name__}, rel_time, {result[time_range][agg.__name__]["rel_time"]}')
                     f.write(f'{time_range}, {agg.__name__}, rel_time, {result[time_range][agg.__name__]["rel_time"]}\n')
                     f.flush()
 
-                    break
+                    print('')
 
-            print('')
+                    break
 
     f.close()
 
