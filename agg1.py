@@ -46,7 +46,7 @@ class AggTree():
             if children:
                 self.children = children
 
-        def _delete_zero_elements(self):
+        def delete_zero_elements(self):
             for key in list(self.queue.keys()):
                 if sum([el.value for el in self.queue[key]]) == 0:
                     self.queue[key] = [self.ValuesTree('', '', 0) for i in range(self.q)]

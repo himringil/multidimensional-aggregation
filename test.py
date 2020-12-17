@@ -53,7 +53,7 @@ def test():
                     
                     # time to aggregate 500000 elements
                     result[time_range][agg.__name__]['agg_time'] /= n
-                    result[time_range][agg.__name__]['agg_time'] = result[time_range][agg.__name__]['agg_time'].total_seconds() * 1000  # ms
+                    result[time_range][agg.__name__]['agg_time'] = int(result[time_range][agg.__name__]['agg_time'].total_seconds() * 1000)  # ms
                     print(f'{time_range}, {agg.__name__}, agg_time, {result[time_range][agg.__name__]["agg_time"]}')
                     f.write(f'{time_range}, {agg.__name__}, agg_time, {result[time_range][agg.__name__]["agg_time"]}\n')
                     f.flush()
