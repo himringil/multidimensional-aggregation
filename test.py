@@ -207,6 +207,19 @@ def test():
                    ['type','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name'],
                    ['if_name','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name'],
                   ],
+                  [['src', 'src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                   ['dst','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                   ['service','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                   ['proxy_src_ip','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                   ['SCADA_Tag','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                   ['s_port','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                   ['appi_name','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                   ['proto','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                   ['orig','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                   ['type','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                   ['if_name','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                   ['if_dir','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir'],
+                  ],
                   [['src', 'src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir & Modbus_Function_Code'],
                    ['dst','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir & Modbus_Function_Code'],
                    ['service','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir & Modbus_Function_Code'],
@@ -219,6 +232,7 @@ def test():
                    ['type','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir & Modbus_Function_Code'],
                    ['if_name','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir & Modbus_Function_Code'],
                    ['if_dir','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir & Modbus_Function_Code'],
+                   ['Modbus_Function_Code','src & dst & service & proxy_src_ip & SCADA_Tag & s_port & appi_name & proto & orig & type & if_name & if_dir & Modbus_Function_Code'],
                   ]
                  ]
 
@@ -226,14 +240,14 @@ def test():
     data_path = 'data'
     
     n_files = 1
-    cnt_tests = 3
+    cnt_tests = 5
 
     f = open('test_result.txt', 'w')
 
-    for conf, relative in zip(params_conf, params_rel):
+    for conf, relative in zip([params_conf[-2]], [params_rel[-2]]):
         for agg in [agg0, agg3]:
         
-            print(f'{datetime.datetime.now()} -> {agg.__name__} (conf)')
+            print(f'{datetime.datetime.now()} -> {agg.__name__} ({conf})')
             agg_time = datetime.timedelta(0)
         
             for cnt, (tree, td) in enumerate(agg.aggregate(tree_conf, conf, data_path)):
@@ -249,27 +263,12 @@ def test():
                     f.write(f'{agg.__name__},agg_time,{agg_time}\n')
                     f.flush()
         
-                    # filter absolute
-                    abs_time = datetime.timedelta(0)
-                    for _ in range(cnt_tests):
-                        tm = datetime.datetime.now()
-                        tree.filter(['1second'],
-                                    absolute=[['', '']])
-                        abs_time += (datetime.datetime.now() - tm)
-                    abs_time /= cnt_tests
-                    abs_time = abs_time.total_seconds() * 1000
-                    print(f'{agg.__name__}, abs_time, {abs_time}')
-                    f.write(f'{agg.__name__},abs_time,{abs_time}\n')
-                    f.flush()
-        
-                    # filter relative
+                    # time to filter relative
                     rel_time = datetime.timedelta(0)
                     for _ in range(cnt_tests):
                         tm = datetime.datetime.now()
                         tree.filter(['1second'],
-                                    relative=[['src', 'src & dst'],
-                                              ['dst', 'src & dst']
-                                             ])
+                                    relative=relative)
                         rel_time += (datetime.datetime.now() - tm)
                     rel_time /= cnt_tests
                     rel_time = rel_time.total_seconds() * 1000
