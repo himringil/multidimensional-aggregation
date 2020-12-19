@@ -126,6 +126,11 @@ class AggTree():
             # for el in node.graph:
             #     print(f'    {el}: {node.graph[el]}')
 
+    def delete_zero_elements(self):
+        self.tree.delete_zero_elements()
+        for descendant in self.tree.descendants:
+            descendant.delete_zero_elements()
+
     def select_params(self, row):
     
         values = dict()
@@ -248,7 +253,7 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         print(f'Exception at {index}: {e}')
                     td += (datetime.now() - tm)
 
-                tree.tree.delete_zero_elements()
+                tree.delete_zero_elements()
 
                 yield tree, td
         break
@@ -259,7 +264,7 @@ if __name__ == '__main__':
         raise Exception('args: <tree_config_path> <params_config_path> <data_folder_path>')
 
     for tree, td in aggregate(load_tree(argv[1]), load_params(argv[2]), argv[3]):
-        tree.print()
+        #tree.print()
     
         ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
     
@@ -271,7 +276,7 @@ if __name__ == '__main__':
         tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
     
          
-        tree.filter(ts,
+        tree.filter(['10sec -> 1sec'],
                     absolute=[['src', ''], ['dst', '']],
                     relative=[['src', 'src & dst'],
                               ['dst', 'src & dst']]).print()

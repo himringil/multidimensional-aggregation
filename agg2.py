@@ -16,7 +16,7 @@ class AggTree():
 
     class TimeSeries(NodeMixin):
     
-        class ValuesTree(NodeMixin):
+        class ValuesNode(NodeMixin):
              
             def __init__(self, fullname, name, value, parent=None, children=None):
     
@@ -65,7 +65,7 @@ class AggTree():
 
         def _oldest_values_to_values_tree(self, el):
             el.value.append(0)
-            return self.ValuesTree(el.fullname, el.name, el.value.pop(0), children=[self._oldest_values_to_values_tree(c) for c in el.children])
+            return self.ValuesNode(el.fullname, el.name, el.value.pop(0), children=[self._oldest_values_to_values_tree(c) for c in el.children])
 
         def _delete_zero_elements(self, node):
             for child in node.children:
@@ -77,7 +77,7 @@ class AggTree():
         def delete_zero_elements(self):
             for el in self.queue:
                 if sum(self.queue[el].value) == 0:
-                    self.queue[el] = self.ValuesTree('', '', [0] * self.q)
+                    self.queue[el] = self.ValuesNode('', '', [0] * self.q)
                 else:
                     self._delete_zero_elements(self.queue[el])
 
@@ -86,7 +86,7 @@ class AggTree():
             # start queue if it is empty
             if not self.time_start:
                 for el in values:
-                    self.queue[el] = self.ValuesTree('', '', [0] * self.q)
+                    self.queue[el] = self.ValuesNode('', '', [0] * self.q)
                     self._merge_trees([self.queue[el]], values[el])
                 self.time_start = dt - self.time_range + self.time_delta
                 return
@@ -107,7 +107,7 @@ class AggTree():
             # new element belongs to last element of queue
             for el in values:
                 if not self.queue.get(el):
-                    self.queue[el] = self.ValuesTree('', '', [0] * self.q)
+                    self.queue[el] = self.ValuesNode('', '', [0] * self.q)
                 self._merge_trees([self.queue[el]], values[el])
 
     def __init__(self, tree: dict, params: list):
@@ -148,16 +148,21 @@ class AggTree():
                     treestr1 = u"%s%s" % (pre1, node1.name)
                     print(f'{" " * len(pre)}{treestr1.ljust(8)}:    {node1.value}\n')
 
+    def delete_zero_elements(self):
+        self.tree.delete_zero_elements()
+        for descendant in self.tree.descendants:
+            descendant.delete_zero_elements()
+
     def _create_values_tree(self, row, param, prev):
         name = ' && '.join([f'{el}={row[el]}' for el in param if type(el) == str])
         fullname = ' | '.join([prev, name]) if prev else name
         l = param[-1] if type(param[-1]) == list else []
-        return self.TimeSeries.ValuesTree(fullname, name, 1, children=[self._create_values_tree(row, l, fullname)] if l else [])
+        return self.TimeSeries.ValuesNode(fullname, name, 1, children=[self._create_values_tree(row, l, fullname)] if l else [])
 
     def select_params(self, row):
         values = dict()
         for param in self.params:
-            values[param] = self.TimeSeries.ValuesTree('', '', 1, children=[self._create_values_tree(row, self.params[param], '')])
+            values[param] = self.TimeSeries.ValuesNode('', '', 1, children=[self._create_values_tree(row, self.params[param], '')])
         return row['datetime'], values
 
     def aggregate(self, row):
@@ -295,7 +300,7 @@ def aggregate(tree_conf: str, params_conf: str, data_path: str):
                         print(f'Exception at {index}: {e}')
                     td += (datetime.now() - tm)
 
-                tree.tree.delete_zero_elements()
+                tree.delete_zero_elements()
 
                 yield tree, td
         break
@@ -305,5 +310,22 @@ if __name__ == '__main__':
     if len(argv) < 4:
         raise Exception('args: <tree_config_path> <params_config_path> <data_folder_path>')
 
-    tree = aggregate(load_tree(argv[1]), load_params(argv[2]), argv[3])
-    tree.print()
+    for tree, td in aggregate(load_tree(argv[1]), load_params(argv[2]), argv[3]):
+        #tree.print()
+    
+        ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
+    
+        print('--------------------------------')
+        tree.filter(ts, [['src', '192.168.1.10']]).print()
+        print('--------------------------------')
+        tree.filter(ts, [['service', '137']]).print()
+        print('--------------------------------')
+        tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
+    
+         
+        tree.filter(['10sec -> 1sec'],
+                    absolute=[['src', ''], ['dst', '']],
+                    relative=[['src', 'src & dst'],
+                              ['dst', 'src & dst']]).print()
+        
+        break
