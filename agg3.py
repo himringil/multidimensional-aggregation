@@ -48,12 +48,10 @@ class AggTree():
 
         def _append_graph(self, graph: dict):
             for key in graph.keys():
-                if key not in self.graph.keys():
+                if self.graph.get(key, None) is None:
                     self.graph[key] = graph[key].copy()
                     continue
-                for value in graph[key]:
-                    if value not in self.graph[key]:
-                        self.graph[key].append(value)
+                self.graph[key] |= graph[key]
 
         def add(self, dt: datetime, values, graph: dict):
     
@@ -82,11 +80,11 @@ class AggTree():
                 # filter graph
                 old_graph = dict()
                 for key in self.graph.keys():
-                    if key in old_values.keys():
-                        old_graph[key] = []
+                    if old_values.get(key, None) is not None:
+                        old_graph[key] = set()
                         for value in self.graph[key]:
-                            if value in old_values.keys():
-                                old_graph[key].append(value)
+                            if old_values.get(value, None) is not None:
+                                old_graph[key].add(value)
 
                 for child in self.children:
                     child.add(self.time_start, old_values, old_graph)
@@ -136,7 +134,7 @@ class AggTree():
         for param in self.params:
             key = ' & '.join([f'{el}={row[el]}' for el in param]) if type(param) is list else f'{param}={row[param]}'
             values[key] = 1
-            graph[key] = []
+            graph[key] = set()
 
         for node1 in graph.keys():
             for node2 in graph.keys():
@@ -147,7 +145,7 @@ class AggTree():
                             break
                     else:
                         # node1 contain all parameters from node2
-                        graph[node2].append(node1)
+                        graph[node2].add(node1)
         
         return row['datetime'], values, graph
     
@@ -260,5 +258,22 @@ if __name__ == '__main__':
     if len(argv) < 4:
         raise Exception('args: <tree_config_path> <params_config_path> <data_folder_path>')
 
-    tree = aggregate(load_tree(argv[1]), load_params(argv[2]), argv[3])
-    tree.print()
+    for tree, td in aggregate(load_tree(argv[1]), load_params(argv[2]), argv[3]):
+        tree.print()
+    
+        ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
+    
+        print('--------------------------------')
+        tree.filter(ts, [['src', '192.168.1.10']]).print()
+        print('--------------------------------')
+        tree.filter(ts, [['service', '137']]).print()
+        print('--------------------------------')
+        tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
+    
+         
+        tree.filter(ts,
+                    absolute=[['src', ''], ['dst', '']],
+                    relative=[['src', 'src & dst'],
+                              ['dst', 'src & dst']]).print()
+        
+        break

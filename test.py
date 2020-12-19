@@ -244,7 +244,7 @@ def test():
 
     f = open('test_result.txt', 'w')
 
-    for conf, relative in zip([params_conf[-2]], [params_rel[-2]]):
+    for conf, relative in zip(params_conf, params_rel):
         for agg in [agg0, agg3]:
         
             print(f'{datetime.datetime.now()} -> {agg.__name__} ({conf})')
