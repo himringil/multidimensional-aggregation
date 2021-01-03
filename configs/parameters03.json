@@ -1,0 +1,24 @@
+[
+   [
+      "src"
+   ],
+   [
+      "dst"
+   ],
+   [
+      "service"
+   ],
+   [
+      "src",
+      "dst"
+   ],
+   [
+      "dst",
+      "service"
+   ],
+   [
+      "src",
+      "dst",
+      "service"
+   ]
+]

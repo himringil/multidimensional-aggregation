@@ -1,13 +1,9 @@
 from sys import argv
-from os import walk
-from os.path import join
 from datetime import datetime, timedelta
 from pytimeparse.timeparse import timeparse
-from json import load
-
-import pandas as pd
 from anytree import NodeMixin, RenderTree
 
+from agg import *
 from AggResult import AggResult
 
 import time
@@ -137,7 +133,7 @@ class AggTree():
         graph = dict()
         
         for param in self.params:
-            key = ' & '.join([f'{el}={row[el]}' for el in param]) if type(param) is list else f'{param}={row[param]}'
+            key = ' & '.join([f'{el}={row[el]}' for el in param])
             values[key] = 1
             graph[key] = set()
 
@@ -171,9 +167,8 @@ class AggTree():
                         yield f'{neightbor} / {sub_lst}', [format(l/subl if subl else 0, '.3f') for subl, l in zip(rel[0][sub_lst], queue[neightbor])]
 
     def filter(self,  timeseries_name: list = [], absolute: list = [], relative: list = []):
+       
         result = AggResult()
-        if not timeseries_name:
-            return result
 
         # delete bad relatives
         relative = [[param[0], param[1]] for param in relative if self._is_sublist(param[0].split(' & '), param[1].split(' & '))]
@@ -185,7 +180,7 @@ class AggTree():
                 time_series_nodes.append(child)
             
             # filter time series
-            if time_series_node.name not in timeseries_name:
+            if len(timeseries_name) > 0 and time_series_node.name not in timeseries_name:
                 continue
             
             result.add(time_series_node.name, time_series_node.time_start, time_series_node.time_range, time_series_node.time_delta)
@@ -217,46 +212,6 @@ class AggTree():
 
         return result
 
-
-def load_tree(path):
-    f = open(path)
-    return load(f)
-
-def load_params(path):
-    f = open(path)
-    return load(f)
-
-def aggregate(tree_conf: str, params_conf: str, data_path: str):
-    tree = AggTree(tree_conf, params_conf)
-    
-    for (_, _, filenames) in walk(data_path):
-        for filename in sorted(filenames):
-            if filename.endswith('.parquet'):
-                    
-                filepath = join(data_path, filename)
-                df = pd.read_parquet(filepath)
-                df['datetime'] = pd.to_datetime(df['date'].astype(str) + ' ' + df['time'], errors='coerce', format='%d%b%Y %H:%M:%S')
-                df.drop(axis=1, columns=['date', 'time'], inplace=True)
-                df.rename(columns={'i/f_name' : 'if_name', 'i/f_dir' : 'if_dir'}, inplace=True)
-
-                print(f'    {datetime.now()} -> {filename} ({len(df.index)} rows)')
-    
-                td = timedelta(0)
-
-                for index, row in df.iterrows():
-                    tm = datetime.now()
-                    if not row['src'] or not row['dst']:
-                        continue
-                    try:
-                        tree.aggregate(row)
-                    except Exception as e:
-                        print(f'Exception at {index}: {e}')
-                    td += (datetime.now() - tm)
-
-                tree.delete_zero_elements()
-
-                yield tree, td
-        break
 
 if __name__ == '__main__':
 

@@ -1,0 +1,19 @@
+{
+   "name":"10sec -> 1sec",
+   "range":"10s",
+   "delta":"1s",
+   "child":[
+      {
+         "name":"10min -> 1min",
+         "range":"10m",
+         "delta":"1m",
+         "child":[
+            {
+               "name":"5hour -> 30min",
+               "range":"5h",
+               "delta":"30m"
+            }
+         ]
+      }
+   ]
+}
