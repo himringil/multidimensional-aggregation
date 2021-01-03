@@ -172,7 +172,9 @@ if __name__ == '__main__':
     if len(argv) < 4:
         raise Exception('args: <tree_config_path> <params_config_path> <data_folder_path>')
 
-    for tree, td in aggregate(load_tree(argv[1]), load_params(argv[2]), argv[3]):
+    tree = AggTree(load_tree(argv[1]), load_params(argv[2]))
+
+    for tree, td in aggregate(tree, argv[3]):
         #tree.print()
     
         ts = ['10sec -> 1sec', '10min -> 1min', '5hour -> 30min']
