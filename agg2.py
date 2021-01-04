@@ -89,13 +89,12 @@ class AggTree(AggTreeBase):
                 self._merge_trees([self.queue[el]], values[el])
 
     def __init__(self, tree: dict, params: list):
+        super().__init__(tree, params)
         if not self._correct_params(params):
             raise Exception('Bad parameters format')
         self.params = dict()
         for param in params:
             self.params[self._get_full_name(param)] = param
-        super().__init__(tree, params)
-
 
     def _check_param(self, param):
         if not type(param) == list or len(param) == 0:
@@ -147,11 +146,6 @@ class AggTree(AggTreeBase):
                     treestr1 = u"%s%s" % (pre1, node1.name)
                     print(f'{" " * len(pre)}{treestr1.ljust(8)}:    {node1.value}\n')
 
-    def delete_zero_elements(self):
-        self.tree.delete_zero_elements()
-        for descendant in self.tree.descendants:
-            descendant.delete_zero_elements()
-
     def _create_values_tree(self, row, param, prev):
         name = ' && '.join([f'{el}={row[el]}' for el in param if type(el) == str])
         fullname = ' | '.join([prev, name]) if prev else name
@@ -168,9 +162,6 @@ class AggTree(AggTreeBase):
         datetime, values = self.select_params(row)
         self.tree.add(datetime, values)
     
-    def _is_sublist(self, sub_lst, lst):
-        return set(sub_lst) < set(lst)
-
     def _gen_relatives(self, param, key, root):
 
         sub_lst_params = param[0].split(' & ')

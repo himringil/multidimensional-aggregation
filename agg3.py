@@ -13,8 +13,8 @@ class AggTree(AggTreeBase):
     class TimeSeries(AggTreeBase.TimeSeriesBase):
     
         def __init__(self, name, time_range: timedelta, time_delta: timedelta, parent=None, children=None):
-            self.graph = dict()
             super().__init__(name, time_range, time_delta, parent, children)
+            self.graph = dict()
        
         def delete_zero_elements(self):
             for key in list(self.queue.keys()):
@@ -81,10 +81,10 @@ class AggTree(AggTreeBase):
     
 
     def __init__(self, tree: dict, params: list):
+        super().__init__(tree, params)
         if not self._correct_params(params):
             raise Exception('Bad parameters format')
         self.params = params
-        super().__init__(tree, params)
 
     def _correct_params(self, params):
         if not type(params) == list:
@@ -119,11 +119,6 @@ class AggTree(AggTreeBase):
             # for el in node.graph:
             #     print(f'    {el}: {node.graph[el]}')
 
-    def delete_zero_elements(self):
-        self.tree.delete_zero_elements()
-        for descendant in self.tree.descendants:
-            descendant.delete_zero_elements()
-
     def select_params(self, row):
     
         values = dict()
@@ -151,9 +146,6 @@ class AggTree(AggTreeBase):
         datetime, values, graph = self.select_params(row)
         self.tree.add(datetime, values, graph)
     
-    def _is_sublist(self, sub_lst, lst):
-        return set(sub_lst) < set(lst)
-
     def _gen_relatives(self, relatives, graph: dict, queue: list):
         for rel in relatives:
             lst_params = rel[1].split(' & ')

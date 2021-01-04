@@ -46,10 +46,10 @@ class AggTree(AggTreeBase):
                 self.queue[el][-1] += values[el]
     
     def __init__(self, tree: dict, params: list):
+        super().__init__(tree, params)
         if not self._correct_params(params):
             raise Exception('Bad parameters format')
         self.params = params
-        super().__init__(tree, params)
 
     def _correct_params(self, params):
         if not type(params) == list:
@@ -68,11 +68,6 @@ class AggTree(AggTreeBase):
             print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta}')
             for el in sorted(node.queue):
                 print(f'{" " * len(pre)}{el}: {node.queue[el]}')
-
-    def delete_zero_elements(self):
-        self.tree.delete_zero_elements()
-        for descendant in self.tree.descendants:
-            descendant.delete_zero_elements()
 
     def select_params(self, row):
         values = dict()
