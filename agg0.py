@@ -48,8 +48,8 @@ class AggTree(AggTreeBase):
     def __init__(self, tree: dict, params: list):
         if not self._correct_params(params):
             raise Exception('Bad parameters format')
-        self.tree = self._create_tree(tree)
         self.params = params
+        super().__init__(tree, params)
 
     def _correct_params(self, params):
         if not type(params) == list:

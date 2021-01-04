@@ -8,7 +8,7 @@ from agg_result import AggResult
 
 import time
 
-class AggTree():
+class AggTree(AggTreeBase):
 
     class TimeSeries(AggTreeBase.TimeSeriesBase):
     
@@ -94,7 +94,8 @@ class AggTree():
         self.params = dict()
         for param in params:
             self.params[self._get_full_name(param)] = param
-        self.tree = self._create_tree(tree)
+        super().__init__(tree, params)
+
 
     def _check_param(self, param):
         if not type(param) == list or len(param) == 0:

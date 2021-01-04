@@ -39,7 +39,7 @@ class AggTreeBase(ABC):
 
     @abstractmethod
     def __init__(self, tree: dict, params: list):
-        pass
+        self.tree = self._create_tree(tree)
 
     @abstractmethod
     def _correct_params(self, params):
