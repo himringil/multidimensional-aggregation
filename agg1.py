@@ -93,11 +93,31 @@ class AggTree():
     
 
     def __init__(self, tree: dict, params: list):
-        # TODO: check params struct
+        if not self._correct_params(params):
+            raise Exception('Bad parameters format')
         self.params = dict()
         for param in params:
             self.params[self._get_full_name(param)] = param
         self.tree = self._create_tree(tree)
+
+    def _check_param(self, param):
+        if not type(param) == list or len(param) == 0:
+            return False
+        str_params = [el for el in param if type(el) == str]
+        lst_param = param[-1] if type(param[-1]) == list else None
+        if len(str_params) == 0 or not len(str_params) + (0 if lst_param is None else 1) == len(param):
+            return False
+        if not lst_param is None:
+            return self._check_param(lst_param)
+        return True
+
+    def _correct_params(self, params):
+        if not type(params) == list:
+            return False
+        for param in params:
+            if not self._check_param(param):
+                return False
+        return True
 
     def _get_full_name(self, param):
         name = ' && '.join([el for el in param if type(el) == str])
