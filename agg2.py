@@ -4,13 +4,13 @@ from pytimeparse.timeparse import timeparse
 from anytree import NodeMixin, RenderTree, LevelOrderGroupIter
 
 from agg import *
-from AggResult import AggResult
+from agg_result import AggResult
 
 import time
 
 class AggTree():
 
-    class TimeSeries(NodeMixin):
+    class TimeSeries(AggTreeBase.TimeSeriesBase):
     
         class ValuesNode(NodeMixin):
              
@@ -24,24 +24,6 @@ class AggTree():
                 if children:
                     self.children = children
 
-        def __init__(self, name, time_range: timedelta, time_delta: timedelta, parent=None, children=None):
-    
-            self.q, r = divmod(time_range, time_delta)
-            if time_range < time_delta or r:
-                raise ValueError
-    
-            self.name = name
-            
-            self.time_range = time_range
-            self.time_delta = time_delta
-            self.time_start = None
-    
-            self.queue = dict()
-    
-            self.parent = parent
-            if children:
-                self.children = children
-    
         def _merge_trees(self, nodes_to, node_from):
             for node_to in nodes_to:
                 if node_to.name == node_from.name:

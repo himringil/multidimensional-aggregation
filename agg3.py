@@ -4,32 +4,17 @@ from pytimeparse.timeparse import timeparse
 from anytree import NodeMixin, RenderTree
 
 from agg import *
-from AggResult import AggResult
+from agg_result import AggResult
 
 import time
 
 class AggTree():
 
-    class TimeSeries(NodeMixin):
+    class TimeSeries(AggTreeBase.TimeSeriesBase):
     
         def __init__(self, name, time_range: timedelta, time_delta: timedelta, parent=None, children=None):
-    
-            self.q, r = divmod(time_range, time_delta)
-            if time_range < time_delta or r:
-                raise ValueError
-    
-            self.name = name
-            
-            self.time_range = time_range
-            self.time_delta = time_delta
-            self.time_start = None
-    
-            self.queue = dict()
             self.graph = dict()
-    
-            self.parent = parent
-            if children:
-                self.children = children
+            super().__init__(name, time_range, time_delta, parent, children)
        
         def delete_zero_elements(self):
             for key in list(self.queue.keys()):

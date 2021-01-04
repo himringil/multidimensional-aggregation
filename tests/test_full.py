@@ -6,8 +6,7 @@ if __name__ == '__main__':
 
     tree_conf = 'configs/tree.json'
     params_confs = [ 'configs/parameters03.json', 'configs/parameters12.json',
-                     'configs/parameters12.json', 'configs/parameters03.json'
-                   ]
+                     'configs/parameters12.json', 'configs/parameters03.json' ]
 
     for aggN, params_conf in zip([agg0, agg1, agg2, agg3], params_confs):
     
@@ -17,16 +16,14 @@ if __name__ == '__main__':
 
         for tree, td in agg.aggregate(tree, data_path):
 
-            ts = ['10sec -> 1sec', '10min -> 1min']
-    
             print('--------------------------------')
-            tree.filter(ts, [['src', '192.168.1.10']]).print()
+            tree.filter(['10sec -> 1sec', '10min -> 1min'], [['src', '192.168.1.10']]).print()
             print('--------------------------------')
-            tree.filter(ts, [['service', '137']]).print()
+            tree.filter([], [['service', '137']]).print()
             print('--------------------------------')
-            tree.filter(ts, [['', '192.168.1.50'], ['service', '']]).print()
+            tree.filter(['10sec -> 1sec', '10min -> 1min'], [['', '192.168.1.50'], ['service', '']]).print()
             print('--------------------------------')
-            tree.filter(ts,
+            tree.filter('10sec -> 1sec',
                         absolute=[['src', ''], ['dst', '']],
                         relative=[['src', 'src & dst'],
                                   ['dst', 'src & dst']]).print()
