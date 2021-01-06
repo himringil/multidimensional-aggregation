@@ -112,7 +112,7 @@ def test():
                                              ])
                         rel_time += (datetime.now() - tm)
                     rel_time /= cnt_tests
-                    rel_time = rel_timetotal_seconds() * 1000
+                    rel_time = rel_time.total_seconds() * 1000
                     print(f'{time_range},{aggN.__name__},rel_time,{rel_time}')
                     f.write(f'{time_range},{aggN.__name__},rel_time,{rel_time}\n')
                     f.flush()
