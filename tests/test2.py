@@ -28,126 +28,126 @@ def test():
 
     tree_conf = {
      "name":"1second",
-     "range":"10000s",
+     "range":"5000s",
      "delta":"1s"
      }
     
-    params_conf = [ [ "src",
-                      "dst",
+    params_conf = [ [ ["src"],
+                      ["dst"],
                       [ "src", "dst" ]
                     ],
-                    [ "src",
-                      "dst",
-                      "service",
+                    [ ["src"],
+                      ["dst"],
+                      ["service"],
                       [ "src", "dst", "service" ]
                     ],
-                    [ "src",
-                      "dst",
-                      "service",
-                      "proxy_src_ip",
+                    [ ["src"],
+                      ["dst"],
+                      ["service"],
+                      ["proxy_src_ip"],
                       [ "src", "dst", "service", "proxy_src_ip" ]
                     ],
-                    [ "src",
-                      "dst",
-                      "service",
-                      "proxy_src_ip",
-                      "SCADA_Tag",
+                    [ ["src"],
+                      ["dst"],
+                      ["service"],
+                      ["proxy_src_ip"],
+                      ["SCADA_Tag"],
                       [ "src", "dst", "service", "proxy_src_ip", "SCADA_Tag" ],
                     ],
-                    [ "src",
-                      "dst",
-                      "service",
-                      "proxy_src_ip",
-                      "SCADA_Tag",
-                      "s_port",
+                    [ ["src"],
+                      ["dst"],
+                      ["service"],
+                      ["proxy_src_ip"],
+                      ["SCADA_Tag"],
+                      ["s_port"],
                       [ "src", "dst", "service", "proxy_src_ip", "SCADA_Tag", "s_port" ]
                     ],
-                    [ "src",
-                      "dst",
-                      "service",
-                      "proxy_src_ip",
-                      "SCADA_Tag",
-                      "s_port",
-                      "appi_name",
+                    [ ["src"],
+                      ["dst"],
+                      ["service"],
+                      ["proxy_src_ip"],
+                      ["SCADA_Tag"],
+                      ["s_port"],
+                      ["appi_name"],
                       [ "src", "dst", "service", "proxy_src_ip", "SCADA_Tag", "s_port", "appi_name" ]
                     ],
-                    [ "src",
-                      "dst",
-                      "service",
-                      "proxy_src_ip",
-                      "SCADA_Tag",
-                      "s_port",
-                      "appi_name",
-                      "proto",
+                    [ ["src"],
+                      ["dst"],
+                      ["service"],
+                      ["proxy_src_ip"],
+                      ["SCADA_Tag"],
+                      ["s_port"],
+                      ["appi_name"],
+                      ["proto"],
                       [ "src", "dst", "service", "proxy_src_ip", "SCADA_Tag", "s_port", "appi_name", "proto" ]
                     ],
-                    [ "src",
-                      "dst",
-                      "service",
-                      "proxy_src_ip",
-                      "SCADA_Tag",
-                      "s_port",
-                      "appi_name",
-                      "proto",
-                      "orig",
+                    [ ["src"],
+                      ["dst"],
+                      ["service"],
+                      ["proxy_src_ip"],
+                      ["SCADA_Tag"],
+                      ["s_port"],
+                      ["appi_name"],
+                      ["proto"],
+                      ["orig"],
                       [ "src", "dst", "service", "proxy_src_ip", "SCADA_Tag", "s_port", "appi_name", "proto",
                         "orig" ]
                     ],
-                    [ "src",
-                      "dst",
-                      "service",
-                      "proxy_src_ip",
-                      "SCADA_Tag",
-                      "s_port",
-                      "appi_name",
-                      "proto",
-                      "orig",
-                      "type",
+                    [ ["src"],
+                      ["dst"],
+                      ["service"],
+                      ["proxy_src_ip"],
+                      ["SCADA_Tag"],
+                      ["s_port"],
+                      ["appi_name"],
+                      ["proto"],
+                      ["orig"],
+                      ["type"],
                       [ "src", "dst", "service", "proxy_src_ip", "SCADA_Tag", "s_port", "appi_name", "proto",
                         "orig", "type" ]
                     ],
-                    [ "src",
-                      "dst",
-                      "service",
-                      "proxy_src_ip",
-                      "SCADA_Tag",
-                      "s_port",
-                      "appi_name",
-                      "proto",
-                      "orig",
-                      "type",
-                      "if_name",
+                    [ ["src"],
+                      ["dst"],
+                      ["service"],
+                      ["proxy_src_ip"],
+                      ["SCADA_Tag"],
+                      ["s_port"],
+                      ["appi_name"],
+                      ["proto"],
+                      ["orig"],
+                      ["type"],
+                      ["if_name"],
                       [ "src", "dst", "service", "proxy_src_ip", "SCADA_Tag", "s_port", "appi_name", "proto",
                         "orig", "type", "if_name" ]
                     ],
-                    [ "src",
-                      "dst",
-                      "service",
-                      "proxy_src_ip",
-                      "SCADA_Tag",
-                      "s_port",
-                      "appi_name",
-                      "proto",
-                      "orig",
-                      "type",
-                      "if_name",
-                      "if_dir",
+                    [ ["src"],
+                      ["dst"],
+                      ["service"],
+                      ["proxy_src_ip"],
+                      ["SCADA_Tag"],
+                      ["s_port"],
+                      ["appi_name"],
+                      ["proto"],
+                      ["orig"],
+                      ["type"],
+                      ["if_name"],
+                      ["if_dir"],
                       [ "src", "dst", "service", "proxy_src_ip", "SCADA_Tag", "s_port", "appi_name", "proto",
                         "orig", "type", "if_name", "if_dir" ]
                     ],
-                    [ "src",
-                      "dst",
-                      "service",
-                      "proxy_src_ip",
-                      "SCADA_Tag",
-                      "s_port",
-                      "appi_name",
-                      "proto",
-                      "orig",
-                      "type",
-                      "if_name",
-                      "if_dir",
-                      "Modbus_Function_Code",
+                    [ ["src"],
+                      ["dst"],
+                      ["service"],
+                      ["proxy_src_ip"],
+                      ["SCADA_Tag"],
+                      ["s_port"],
+                      ["appi_name"],
+                      ["proto"],
+                      ["orig"],
+                      ["type"],
+                      ["if_name"],
+                      ["if_dir"],
+                      ["Modbus_Function_Code"],
                       [ "src", "dst", "service", "proxy_src_ip", "SCADA_Tag", "s_port", "appi_name", "proto",
                         "orig", "type", "if_name", "if_dir", "Modbus_Function_Code" ]
                     ]
@@ -259,7 +259,7 @@ def test():
 
     data_path = 'data_example'
     
-    n_files = 8
+    n_files = 1
     cnt_tests = 5
 
     f = open('results/test2.csv', 'w')
@@ -268,18 +268,20 @@ def test():
 
         for aggN in [agg0, agg3]:
 
-            print(f'{datetime.datetime.now()} -> {aggN.__name__} ({conf})')
+            print(f'{datetime.now()} -> {aggN.__name__} ({conf})')
 
             tree = aggN.AggTree(tree_conf, conf)
             
-            agg_time = datetime.timedelta(0)
+            agg_time = timedelta(0)
         
-            for cnt, (tree, td) in enumerate(agg.aggregate(tree, data_path)):
+            for cnt, (tree, td) in enumerate(aggregate(tree, data_path)):
         
                 agg_time += td
         
                 if cnt + 1 == n_files:
                     
+                    print(f'{time_range},{aggN.__name__},cnt_queu,{len(tree.tree.queue)}')
+
                     # time to aggregate 100000 elements
                     agg_time /= (5 * n_files)
                     agg_time = int(agg_time.total_seconds() * 1000)  # ms
@@ -288,12 +290,12 @@ def test():
                     f.flush()
         
                     # time to filter relative
-                    rel_time = datetime.timedelta(0)
+                    rel_time = timedelta(0)
                     for _ in range(cnt_tests):
-                        tm = datetime.datetime.now()
+                        tm = datetime.now()
                         tree.filter(['1second'],
                                     relative=relative)
-                        rel_time += (datetime.datetime.now() - tm)
+                        rel_time += (datetime.now() - tm)
                     rel_time /= cnt_tests
                     rel_time = rel_time.total_seconds() * 1000
                     print(f'{aggN.__name__},rel_time,{rel_time}')
