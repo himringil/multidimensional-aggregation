@@ -2,7 +2,7 @@ import datetime
 from random import randint
 import pandas as pd
 
-import agg0, agg3
+import agg, agg0, agg3
 from pympler import asizeof
 
 def generate(params_cnt: int = 10, values_cnt: int = 50):
@@ -52,8 +52,8 @@ def test():
             packet = generate(cnt_params)
             packet['datetime'] = dt
 
-            #for tree in tree0:
-            #    tree.aggregate(packet)
+            for tree in tree0:
+                tree.aggregate(packet)
 
             for tree in tree3:
                 tree.aggregate(packet)
@@ -61,21 +61,21 @@ def test():
         dt += datetime.timedelta(seconds=1)
 
     # filter relative
-    f = open('test_result.txt', 'w')
+    f = open('results/test3.csv', 'w')
 
-    #for i, (tree, rel) in enumerate(zip(tree0, params_rel)):
-    #    rel_time = datetime.timedelta(0)
-    #    for _ in range(cnt_tests):
-    #        tm = datetime.datetime.now()
-    #        tree.filter(['1second'],
-    #                    relative=rel)
-    #        rel_time += (datetime.datetime.now() - tm)
-    #    rel_time /= cnt_tests
-    #    rel_time = rel_time.total_seconds() * 1000
-    #    print(f'    {i+2}: {len(tree.tree.queue)}')
-    #    print(f'agg0, {i+2}, rel_time, {rel_time}')
-    #    f.write(f'agg0,{i+2},rel_time,{rel_time}\n')
-    #    f.flush()
+    for i, (tree, rel) in enumerate(zip(tree0, params_rel)):
+        rel_time = datetime.timedelta(0)
+        for _ in range(cnt_tests):
+            tm = datetime.datetime.now()
+            tree.filter(['1second'],
+                        relative=rel)
+            rel_time += (datetime.datetime.now() - tm)
+        rel_time /= cnt_tests
+        rel_time = rel_time.total_seconds() * 1000
+        print(f'    {i+2}: {len(tree.tree.queue)}')
+        print(f'agg0, {i+2}, rel_time, {rel_time}')
+        f.write(f'agg0,{i+2},rel_time,{rel_time}\n')
+        f.flush()
 
     for i, (tree, rel) in enumerate(zip(tree3, params_rel)):
         rel_time = datetime.timedelta(0)
