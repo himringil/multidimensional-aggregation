@@ -259,7 +259,7 @@ def test():
 
     data_path = 'data_example'
     
-    n_files = 1
+    n_files = 4
     cnt_tests = 5
 
     f = open('results/test2.csv', 'w')
@@ -280,13 +280,16 @@ def test():
         
                 if cnt + 1 == n_files:
                     
-                    print(f'{time_range},{aggN.__name__},cnt_queu,{len(tree.tree.queue)}')
+                    # count of queues
+                    print(f'{len(conf[-1])},{aggN.__name__},cnt_queu,{len(tree.tree.queue)}')
+                    f.write(f'{len(conf[-1])},{aggN.__name__},cnt_queu,{len(tree.tree.queue)}\n')
+                    f.flush()
 
                     # time to aggregate 100000 elements
                     agg_time /= (5 * n_files)
                     agg_time = int(agg_time.total_seconds() * 1000)  # ms
-                    print(f'{aggN.__name__},agg_time,{agg_time}')
-                    f.write(f'{aggN.__name__},agg_time,{agg_time}\n')
+                    print(f'{len(conf[-1])},{aggN.__name__},agg_time,{agg_time}')
+                    f.write(f'{len(conf[-1])},{aggN.__name__},agg_time,{agg_time}\n')
                     f.flush()
         
                     # time to filter relative
@@ -298,8 +301,8 @@ def test():
                         rel_time += (datetime.now() - tm)
                     rel_time /= cnt_tests
                     rel_time = rel_time.total_seconds() * 1000
-                    print(f'{aggN.__name__},rel_time,{rel_time}')
-                    f.write(f'{aggN.__name__},rel_time,{rel_time}\n')
+                    print(f'{len(conf[-1])},{aggN.__name__},rel_time,{rel_time}')
+                    f.write(f'{len(conf[-1])},{aggN.__name__},rel_time,{rel_time}\n')
                     f.flush()
         
                     print('')
