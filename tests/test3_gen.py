@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime, timedelta
 from random import randint
 import pandas as pd
 
@@ -29,9 +29,9 @@ def test():
     params_rel = []
 
     for n in range(2, cnt_params):
-        conf = [f'p{i}' for i in range(1, n + 1)]
-        params_conf.append(conf + [conf])
-        confs = ' & '.join(conf)
+        conf = [[f'p{i}'] for i in range(1, n + 1)]
+        params_conf.append(conf + [[c[0] for c in conf]])
+        confs = ' & '.join([c[0] for c in conf])
         rel = [[f'p{i}', confs] for i in range(1, n + 1)]
         params_rel.append(rel)
 
@@ -43,7 +43,7 @@ def test():
 
     for i in range(time_range + 1):
 
-        print(f'{datetime.datetime.now()} -> {i}')
+        print(f'{datetime.now()} -> {i}')
 
         packets_per_second = randint(200, 300)
 
@@ -58,35 +58,36 @@ def test():
             for tree in tree3:
                 tree.aggregate(packet)
 
-        dt += datetime.timedelta(seconds=1)
+        dt += timedelta(seconds=1)
 
-    # filter relative
     f = open('results/test3.csv', 'w')
 
+    # filter relative
     for i, (tree, rel) in enumerate(zip(tree0, params_rel)):
-        rel_time = datetime.timedelta(0)
+        rel_time = timedelta(0)
         for _ in range(cnt_tests):
-            tm = datetime.datetime.now()
-            tree.filter(['1second'],
-                        relative=rel)
-            rel_time += (datetime.datetime.now() - tm)
+            tm = datetime.now()
+            tree.filter(['1second'], relative=rel)
+            rel_time += (datetime.now() - tm)
         rel_time /= cnt_tests
         rel_time = rel_time.total_seconds() * 1000
-        print(f'    {i+2}: {len(tree.tree.queue)}')
-        print(f'agg0, {i+2}, rel_time, {rel_time}')
+        print(f'agg0,{i+2},cnt_queu,{len(tree.tree.queue)}')
+        f.write(f'agg0,{i+2},cnt_queu,{len(tree.tree.queue)}\n')
+        print(f'agg0,{i+2},rel_time,{rel_time}')
         f.write(f'agg0,{i+2},rel_time,{rel_time}\n')
         f.flush()
 
     for i, (tree, rel) in enumerate(zip(tree3, params_rel)):
-        rel_time = datetime.timedelta(0)
+        rel_time = timedelta(0)
         for _ in range(cnt_tests):
-            tm = datetime.datetime.now()
-            tree.filter(['1second'],
-                        relative=rel)
-            rel_time += (datetime.datetime.now() - tm)
+            tm = datetime.now()
+            tree.filter(['1second'], relative=rel)
+            rel_time += (datetime.now() - tm)
         rel_time /= cnt_tests
         rel_time = rel_time.total_seconds() * 1000
-        print(f'agg3, {i+2}, rel_time, {rel_time}')
+        print(f'agg3,{i+2},cnt_queu,{len(tree.tree.queue)}')
+        f.write(f'agg3,{i+2},cnt_queu,{len(tree.tree.queue)}\n')
+        print(f'agg3,{i+2},rel_time,{rel_time}')
         f.write(f'agg3,{i+2},rel_time,{rel_time}\n')
         f.flush()
     
