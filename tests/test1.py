@@ -70,6 +70,11 @@ def test():
 
                 if cnt + 1 == n:
 
+                    # count of queues
+                    print(f'{time_range},{aggN.__name__},cnt_queu,{len(tree.tree.queue)}')
+                    f.write(f'{time_range},{aggN.__name__},cnt_queu,{len(tree.tree.queue)}\n')
+                    f.flush()
+
                     # time to aggregate 100000 elements
                     agg_time /= (5 * n)
                     agg_time = int(agg_time.total_seconds() * 1000)  # ms
