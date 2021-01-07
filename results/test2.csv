@@ -51,7 +51,7 @@
 10,agg0,rel_time,1183.686
 10,agg3,cnt_queu,178
 10,agg3,agg_time,47390
-10,agg3,rel_time,3418.172
+10,agg3,rel_time,1118.172
 11,agg0,cnt_queu,179
 11,agg0,agg_time,49857
 11,agg0,rel_time,1319.407
@@ -63,7 +63,7 @@
 12,agg0,rel_time,1459.746
 12,agg3,cnt_queu,180
 12,agg3,agg_time,48502
-12,agg3,rel_time,1752.0659999999998
+12,agg3,rel_time,1552.0659999999998
 13,agg0,cnt_queu,182
 13,agg0,agg_time,38678
 13,agg0,rel_time,1579.113

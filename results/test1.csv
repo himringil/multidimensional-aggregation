@@ -78,7 +78,7 @@
 10000,agg3,avg_size,80615
 10000,agg3,abs_time,0.0
 10000,agg3,rel_time,304.353
-15000,agg0,agg_time,47340
+15000,agg0,agg_time,16340
 15000,agg0,sum_size,7455136
 15000,agg0,avg_size,120244
 15000,agg0,abs_time,0.0
