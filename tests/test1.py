@@ -2,7 +2,6 @@ import pandas as pd
 from os import walk
 from os.path import join
 from datetime import datetime, timedelta
-from pympler import asizeof
 
 import agg, agg0, agg1, agg2, agg3
 
@@ -83,7 +82,7 @@ def test():
                     f.flush()
 
                     # sum size of queues
-                    sum_size = asizeof.asizeof(tree.tree.queue) + (asizeof.asizeof(tree.tree.graph) if aggN.__name__ == agg3.__name__ else 0)
+                    sum_size = tree.size()
                     print(f'{time_range},{aggN.__name__},sum_size,{sum_size}')
                     f.write(f'{time_range},{aggN.__name__},sum_size,{sum_size}\n')
                     f.flush()

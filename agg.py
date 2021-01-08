@@ -3,6 +3,7 @@ from datetime import timedelta
 from pytimeparse.timeparse import timeparse
 from abc import ABC, abstractmethod
 from anytree import NodeMixin
+from pympler import asizeof
 
 class AggTreeBase(ABC):
 
@@ -79,6 +80,12 @@ class AggTreeBase(ABC):
     @abstractmethod
     def filter(self, timeseries_name: list = [], absolute: list = [], relative: list = []):
         pass
+
+    def size(self):
+        size = asizeof.asizeof(self.tree.queue)
+        for descendant in self.tree.descendants:
+            size += asizeof.asizeof(descendant.queue)
+        return size
 
 def load_tree(path):
     f = open(path)

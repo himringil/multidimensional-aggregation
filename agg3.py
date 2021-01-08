@@ -2,6 +2,7 @@ from sys import argv
 from datetime import datetime, timedelta
 from pytimeparse.timeparse import timeparse
 from anytree import NodeMixin, RenderTree
+from pympler import asizeof
 
 from agg import *
 from agg_result import AggResult
@@ -200,6 +201,12 @@ class AggTree(AggTreeBase):
                 result[time_series_node.name].add(key, value)
 
         return result
+
+    def size(self):
+        size = asizeof.asizeof(self.tree.queue) + asizeof.asizeof(self.tree.graph)
+        for descendant in self.tree.descendants:
+            size += asizeof.asizeof(descendant.queue) + asizeof.asizeof(descendant.graph)
+        return size
 
 
 if __name__ == '__main__':

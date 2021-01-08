@@ -3,7 +3,6 @@ from random import randint
 import pandas as pd
 
 import agg, agg0, agg3
-from pympler import asizeof
 
 def generate(params_cnt, values_cnt):
     result = dict()
@@ -76,7 +75,7 @@ def test(uniq_params):
         print(f'agg3,{i+2},cnt_queu,{len(tree.tree.queue)}')
         f.write(f'agg3,{i+2},cnt_queu,{len(tree.tree.queue)}\n')
         
-        sum_size = asizeof.asizeof(tree.tree.queue) + asizeof.asizeof(tree.tree.graph)
+        sum_size = tree.size()
         print(f'agg3,{i+2},sum_size,{sum_size}')
         f.write(f'agg3,{i+2},sum_size,{sum_size}\n')
         
@@ -97,7 +96,7 @@ def test(uniq_params):
         print(f'agg0,{i+2},cnt_queu,{len(tree.tree.queue)}')
         f.write(f'agg0,{i+2},cnt_queu,{len(tree.tree.queue)}\n')
         
-        sum_size = asizeof.asizeof(tree.tree.queue)
+        sum_size = tree.size()
         print(f'agg0,{i+2},sum_size,{sum_size}')
         f.write(f'agg0,{i+2},sum_size,{sum_size}\n')
 
@@ -110,5 +109,5 @@ def test(uniq_params):
 
 if __name__ == '__main__':
 
-    for i in [20, 30, 40, 50]:
+    for i in [10]:
         test(i)

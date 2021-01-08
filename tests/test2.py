@@ -2,7 +2,6 @@ import pandas as pd
 from os import walk
 from os.path import join
 from datetime import datetime, timedelta
-from pympler import asizeof
 
 import agg, agg0, agg1, agg2, agg3
 
