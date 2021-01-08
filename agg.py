@@ -45,7 +45,7 @@ class AggTreeBase(ABC):
 
     def _create_tree(self, js):
         if not js:
-            return None
+            raise Exception('Bad json format')
         if not js.get('name', None) or not js.get('range', None) or not js.get('delta', None):
             raise Exception('Bad json format')
         return self.TimeSeries(name=js['name'],
