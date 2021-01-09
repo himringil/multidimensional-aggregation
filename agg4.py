@@ -115,6 +115,9 @@ class AggTree():
         for tree in self.tree:
             tree.add(datetime, values)
     
+    def _is_sublist(self, sub_lst, lst):
+        return set(sub_lst) < set(lst)
+    
     def _gen_relatives(self, relatives):
         for rel in relatives:
             for sub_lst in rel[0]:
@@ -170,6 +173,9 @@ class AggTree():
 
     def size(self):
         return sum([asizeof.asizeof(tree.queue) for tree in self.tree])
+
+    def count(self):
+        return sum([len(tree.queue) for tree in self.tree])
 
 
 def aggregate_folder(tree, data_path):

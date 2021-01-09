@@ -87,6 +87,12 @@ class AggTreeBase(ABC):
             size += asizeof.asizeof(descendant.queue)
         return size
 
+    def count(self):
+        count = len(self.tree.queue)
+        for descendant in self.tree.descendants:
+            count += len(descendant.queue)
+        return count
+
 def load_tree(path):
     f = open(path)
     return load(f)
