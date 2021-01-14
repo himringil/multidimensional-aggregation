@@ -4,6 +4,7 @@ from pytimeparse.timeparse import timeparse
 from anytree import NodeMixin, RenderTree, LevelOrderGroupIter
 
 from agg import *
+from agg_function import *
 from agg_result import AggResult
 
 import time
@@ -32,7 +33,7 @@ class AggTree(AggTreeBase):
         def _merge_trees(self, nodes_to, node_from):
             for node_to in nodes_to:
                 if node_to.name == node_from.name:
-                    node_to.value += node_from.value
+                    node_to.value = AggCount.agg(node_to.value, node_from.value)
                     for child_from in node_from.children:
                         if not self._merge_trees(node_to.children, child_from):
                             child_from.parent = node_to

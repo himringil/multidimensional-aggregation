@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from anytree import RenderTree
 
 from agg import *
+from agg_function import *
 from agg_result import AggResult
 
 class AggTree(AggTreeBase):
@@ -43,7 +44,7 @@ class AggTree(AggTreeBase):
             for el in values:
                 if not self.queue.get(el):
                     self.queue[el] = [0] * self.q
-                self.queue[el][-1] += values[el]
+                self.queue[el][-1] = AggCount.agg(self.queue[el][-1], values[el])
     
     def __init__(self, tree: dict, params: list):
         super().__init__(tree, params)

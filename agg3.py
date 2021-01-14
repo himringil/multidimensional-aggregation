@@ -5,6 +5,7 @@ from anytree import NodeMixin, RenderTree
 from pympler import asizeof
 
 from agg import *
+from agg_function import *
 from agg_result import AggResult
 
 import time
@@ -77,7 +78,7 @@ class AggTree(AggTreeBase):
             for el in values:
                 if not self.queue.get(el):
                     self.queue[el] = [0] * self.q
-                self.queue[el][-1] += values[el]
+                self.queue[el][-1] = AggCount.agg(self.queue[el][-1], values[el])
             self._append_graph(graph)
     
 
