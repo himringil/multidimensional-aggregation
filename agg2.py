@@ -71,8 +71,7 @@ class AggTree(AggTreeBase):
                 return
     
             if dt < self.time_start + self.time_range - self.time_delta:
-                print(dt, self.time_start, self.time_range, self.time_delta, self.time_start + self.time_range - self.time_delta)
-                raise ValueError
+                raise ValueError(f'{dt} < {self.time_start + self.time_range - self.time_delta}: ts={self.time_start} tr={self.time_range} td={self.time_delta}')
     
             # pop elements from queue and insert into childs while new element time not reached
             while not self.time_start + self.time_range - self.time_delta <= dt < self.time_start + self.time_range:
