@@ -12,7 +12,7 @@ class AggTree(AggTreeBase):
     
         def delete_zero_elements(self):
             for key in list(self.queue.keys()):
-                if sum(self.queue[key]) == 0:
+                if key.split(' : ')[0] == 'count' and sum(self.queue[key]) == 0:
                     self.queue.pop(key)
 
         def add(self, dt: datetime, values):
@@ -20,7 +20,7 @@ class AggTree(AggTreeBase):
             # start queue if it is empty
             if not self.time_start:
                 for el in values:
-                    self.queue[el] = [0] * self.q
+                    self.queue[el] = [0 if el.split(' : ')[0] == 'count' else None] * self.q
                     self.queue[el][-1] = values[el]
                 self.time_start = dt - self.time_range + self.time_delta
                 return
@@ -35,7 +35,7 @@ class AggTree(AggTreeBase):
                     value = self.queue[el].pop(0)
                     if value:
                         old_values[el] = value
-                    self.queue[el].append(0)
+                    self.queue[el].append(0 if el.split(' : ')[0] == 'count' else None)
                 for child in self.children:
                     child.add(self.time_start, old_values)
                 self.time_start += self.time_delta
@@ -43,8 +43,17 @@ class AggTree(AggTreeBase):
             # new element belongs to last element of queue
             for el in values:
                 if not self.queue.get(el):
-                    self.queue[el] = [0] * self.q
-                self.queue[el][-1] = AggCount.agg(self.queue[el][-1], values[el])
+                    self.queue[el] = [0 if el.split(' : ')[0] == 'count' else None] * self.q
+                f = el.split(' : ')[0]
+                if f == 'count':
+                    self.queue[el][-1] = AggCount.agg(self.queue[el][-1], values[el])
+                elif f == 'min':
+                    self.queue[el][-1] = AggMin.agg(self.queue[el][-1], values[el])
+                elif f == 'max':
+                    self.queue[el][-1] = AggMax.agg(self.queue[el][-1], values[el])
+                elif f == 'sum':
+                    self.queue[el][-1] = AggSum.agg(self.queue[el][-1], values[el])
+                    
     
     def __init__(self, tree: dict, params: list):
         super().__init__(tree, params)
@@ -52,7 +61,7 @@ class AggTree(AggTreeBase):
             raise Exception('Bad parameters format')
         self.params = params
 
-    def _correct_params(self, params):
+    def _correct_params_count(self, params):
         if not type(params) == list:
             return False
         for param in params:
@@ -72,9 +81,14 @@ class AggTree(AggTreeBase):
 
     def select_params(self, row):
         values = dict()
-        for param in self.params:
-            key = ' & '.join([f'{el}={row[el]}' for el in param])
-            values[key] = 1
+        for key in self.params.keys():
+            if key == 'count':
+                for param in self.params[key]:
+                    key = 'count : ' + ' & '.join([f'{el}={row[el]}' for el in param])
+                    values[key] = 1
+            elif key in [ 'min', 'max', 'sum' ]:
+                for param in self.params[key]:
+                    values[f'{key} : {param[0]}'] = row[param[0]]
         return row['datetime'], values
     
     def aggregate(self, row):

@@ -94,8 +94,10 @@ class AggTree(AggTreeBase):
         if not self._correct_params(params):
             raise Exception('Bad parameters format')
         self.params = dict()
-        for param in params:
-            self.params[self._get_full_name(param)] = param
+        for key in params.keys():
+            self.params[key] = dict()
+            for param in params[key]:
+                self.params[key][self._get_full_name(param)] = param
 
     def _check_param(self, param):
         if not type(param) == list or len(param) == 0:
@@ -108,7 +110,7 @@ class AggTree(AggTreeBase):
             return self._check_param(lst_param)
         return True
 
-    def _correct_params(self, params):
+    def _correct_params_count(self, params):
         if not type(params) == list:
             return False
         for param in params:

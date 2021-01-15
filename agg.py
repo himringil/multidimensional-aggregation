@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from anytree import NodeMixin
 from pympler import asizeof
 
+from agg_function import *
+
 class AggTreeBase(ABC):
 
     class TimeSeriesBase(ABC, NodeMixin):
@@ -40,8 +42,29 @@ class AggTreeBase(ABC):
         self.tree = self._create_tree(tree)
 
     @abstractmethod
-    def _correct_params(self, params):
+    def _correct_params_count(self, params):
         pass
+
+    def _correct_params(self, params):
+        if not type(params) == dict:
+            return False
+        for key in params.keys():
+            if key not in ['count', 'min', 'max', 'sum']:
+                return False
+        for key in params.keys():
+            if key == 'count':
+                if not self._correct_params_count(params[key]):
+                    return False
+            elif key == 'min':
+                if not AggMin.check(params[key]):
+                    return False
+            elif key == 'max':
+                if not AggMax.check(params[key]):
+                    return False
+            elif key == 'sum':
+                if not AggSum.check(params[key]):
+                    return False
+        return True
 
     def _create_tree(self, js):
         if not js:

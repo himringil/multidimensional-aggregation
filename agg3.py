@@ -88,7 +88,7 @@ class AggTree(AggTreeBase):
             raise Exception('Bad parameters format')
         self.params = params
 
-    def _correct_params(self, params):
+    def _correct_params_count(self, params):
         if not type(params) == list:
             return False
         for param in params:
