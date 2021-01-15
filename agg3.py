@@ -8,8 +8,6 @@ from agg import *
 from agg_function import *
 from agg_result import AggResult
 
-import time
-
 class AggTree(AggTreeBase):
 
     class TimeSeries(AggTreeBase.TimeSeriesBase):
@@ -20,7 +18,7 @@ class AggTree(AggTreeBase):
        
         def delete_zero_elements(self):
             for key in list(self.queue.keys()):
-                if sum(self.queue[key]) == 0:
+                if key.split(' : ')[0] == 'count' and sum(self.queue[key]) == 0:
                     self.queue.pop(key)
 
                     # remove node from graph
@@ -41,15 +39,14 @@ class AggTree(AggTreeBase):
             # start queue if it is empty
             if not self.time_start:
                 for el in values:
-                    self.queue[el] = [0] * self.q
+                    self.queue[el] = [0 if el.split(' : ')[0] == 'count' else None] * self.q
                     self.queue[el][-1] = values[el]
                 self.time_start = dt - self.time_range + self.time_delta
                 self.graph = graph.copy()
                 return
     
             if dt < self.time_start + self.time_range - self.time_delta:
-                print(dt, self.time_start, self.time_range, self.time_delta, self.time_start + self.time_range - self.time_delta)
-                raise ValueError
+                raise ValueError(f'{dt} < {self.time_start + self.time_range - self.time_delta}: ts={self.time_start} tr={self.time_range} td={self.time_delta}')
     
             # pop elements from queue and insert into childs while new element time not reached
             while not self.time_start + self.time_range - self.time_delta <= dt < self.time_start + self.time_range:
@@ -58,7 +55,7 @@ class AggTree(AggTreeBase):
                     value = self.queue[el].pop(0)
                     if value:
                         old_values[el] = value
-                    self.queue[el].append(0)
+                    self.queue[el].append(0 if el.split(' : ')[0] == 'count' else None)
 
                 # filter graph
                 old_graph = dict()
@@ -77,11 +74,20 @@ class AggTree(AggTreeBase):
             # new element belongs to last element of queue
             for el in values:
                 if not self.queue.get(el):
-                    self.queue[el] = [0] * self.q
-                self.queue[el][-1] = AggCount.agg(self.queue[el][-1], values[el])
+                    self.queue[el] = [0 if el.split(' : ')[0] == 'count' else None] * self.q
+                f = el.split(' : ')[0]
+                if f == 'count':
+                    self.queue[el][-1] = AggCount.agg(self.queue[el][-1], values[el])
+                elif f == 'min':
+                    self.queue[el][-1] = AggMin.agg(self.queue[el][-1], values[el])
+                elif f == 'max':
+                    self.queue[el][-1] = AggMax.agg(self.queue[el][-1], values[el])
+                elif f == 'sum':
+                    self.queue[el][-1] = AggSum.agg(self.queue[el][-1], values[el])
+
             self._append_graph(graph)
     
-
+    
     def __init__(self, tree: dict, params: list):
         super().__init__(tree, params)
         if not self._correct_params(params):
@@ -99,44 +105,39 @@ class AggTree(AggTreeBase):
                     return False
         return True
 
-    def _create_tree(self, js):
-        
-        if not js:
-            return None
-    
-        if not js.get('name', None) or not js.get('range', None) or not js.get('delta', None):
-            raise Exception('Bad json format')
-    
-        return self.TimeSeries(name=js['name'],
-                               time_range=timedelta(seconds=timeparse(js['range'])),
-                               time_delta=timedelta(seconds=timeparse(js['delta'])),
-                               children=[self._create_tree(c) for c in js.get('child', [])])
-
     def print(self):
         for pre, _, node in RenderTree(self.tree):
             treestr = u"%s%s" % (pre, node.name)
             print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta} nodes={len(node.graph.keys())}')
             for el in sorted(node.queue):
                 print(f'{" " * len(pre)}{el}: {node.queue[el]}')
-            # for el in node.graph:
-            #     print(f'    {el}: {node.graph[el]}')
+            for el in node.graph:
+                print(f'    {el}: {node.graph[el]}')
 
     def select_params(self, row):
     
         values = dict()
         graph = dict()
         
-        for param in self.params:
-            key = ' & '.join([f'{el}={row[el]}' for el in param])
-            values[key] = 1
-            graph[key] = set()
+        for key in self.params.keys():
+            if key == 'count':
+                for param in self.params[key]:
+                    k = 'count : ' + ' & '.join([f'{el}={row[el]}' for el in sorted(param)])
+                    values[k] = 1
+                    graph[k] = set()
+            elif key in [ 'min', 'max', 'sum' ]:
+                for param in self.params[key]:
+                    k = f'{key} : {param[0]}'
+                    values[k] = row[param[0]]
 
         for node1 in graph.keys():
             for node2 in graph.keys():
+                n1 = node1.split(' : ')[1]
+                n2 = node2.split(' : ')[1]
                 if node1 != node2:
-                    ps = node2.split(' & ')
+                    ps = n2.split(' & ')
                     for p in ps:
-                        if node1.find(p) == -1:
+                        if n1.find(p) == -1:
                             break
                     else:
                         # node1 contain all parameters from node2

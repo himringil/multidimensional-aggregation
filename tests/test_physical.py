@@ -66,7 +66,7 @@ if __name__ == '__main__':
     trees = [ agg0.AggTree(tree_conf, params_conf0),
             #  agg1.AggTree(tree_conf, params_conf1),
             #  agg2.AggTree(tree_conf, params_conf1),
-            #  agg3.AggTree(tree_conf, params_conf0)
+              agg3.AggTree(tree_conf, params_conf0)
             ]
 
     dt = pd.to_datetime('19Dec2020 19:00:00', errors='coerce', format='%d%b%Y %H:%M:%S')

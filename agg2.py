@@ -150,7 +150,7 @@ class AggTree(AggTreeBase):
                     print(f'{" " * len(pre)}{treestr1.ljust(8)}:    {node1.value}\n')
 
     def _create_values_tree(self, row, param, prev):
-        name = ' && '.join([f'{el}={row[el]}' for el in param if type(el) == str])
+        name = ' && '.join([f'{el}={row[el]}' for el in sorted(param) if type(el) == str])
         fullname = ' | '.join([prev, name]) if prev else name
         l = param[-1] if type(param[-1]) == list else []
         return self.TimeSeries.ValuesNode(fullname, name, 1, children=[self._create_values_tree(row, l, fullname)] if l else [])

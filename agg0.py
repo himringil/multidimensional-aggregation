@@ -36,6 +36,7 @@ class AggTree(AggTreeBase):
                     if value:
                         old_values[el] = value
                     self.queue[el].append(0 if el.split(' : ')[0] == 'count' else None)
+
                 for child in self.children:
                     child.add(self.time_start, old_values)
                 self.time_start += self.time_delta
@@ -84,7 +85,7 @@ class AggTree(AggTreeBase):
         for key in self.params.keys():
             if key == 'count':
                 for param in self.params[key]:
-                    key = 'count : ' + ' & '.join([f'{el}={row[el]}' for el in param])
+                    key = 'count : ' + ' & '.join([f'{el}={row[el]}' for el in sorted(param)])
                     values[key] = 1
             elif key in [ 'min', 'max', 'sum' ]:
                 for param in self.params[key]:
