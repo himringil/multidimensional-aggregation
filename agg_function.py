@@ -15,9 +15,11 @@ class AggFunction(ABC):
 class AggCount(AggFunction):
     
     def check(params):
-        pass
+        return True
 
     def agg(old_value, new_value):
+        if old_value is None:
+            return new_value
         return old_value + new_value
 
 class AggSum(AggFunction):
@@ -33,7 +35,7 @@ class AggSum(AggFunction):
         return True
 
     def agg(old_value, new_value):
-        if old_value == None:
+        if old_value is None:
             return new_value
         return old_value + new_value
 
@@ -50,7 +52,7 @@ class AggMin(AggFunction):
         return True
 
     def agg(old_value, new_value):
-        if old_value == None:
+        if old_value is None:
             return new_value
         return min(old_value, new_value)
 
@@ -67,6 +69,6 @@ class AggMax(AggFunction):
         return True
 
     def agg(old_value, new_value):
-        if old_value == None:
+        if old_value is None:
             return new_value
         return max(old_value, new_value)

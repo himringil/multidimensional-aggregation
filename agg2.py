@@ -1,13 +1,10 @@
 from sys import argv
 from datetime import datetime, timedelta
-from pytimeparse.timeparse import timeparse
 from anytree import NodeMixin, RenderTree, LevelOrderGroupIter
 
 from agg import *
 from agg_function import *
 from agg_result import AggResult
-
-import time
 
 class AggTree(AggTreeBase):
 
@@ -28,22 +25,22 @@ class AggTree(AggTreeBase):
         def _merge_trees(self, nodes_to, node_from):
             for node_to in nodes_to:
                 if node_to.name == node_from.name:
-                    node_to.value[-1] = AggCount.agg(node_to.value[-1], node_from.value)
+                    node_to.value[-1] = self._new_value(node_to.name, node_to.value[-1], node_from.value)
                     for child_from in node_from.children:
                         if not self._merge_trees(node_to.children, child_from):
                             value = child_from.value
-                            child_from.value = [0] * self.q
-                            child_from.value[-1] = AggCount.agg(child_from.value[-1], value)
+                            child_from.value = [0 if self._get_func(child_from.name) == 'count' else None] * self.q
+                            child_from.value[-1] = self._new_value(child_from.name, child_from.value[-1], value)
                             child_from.parent = node_to
                             for descendant in child_from.descendants:
                                 value = descendant.value
-                                descendant.value = [0] * self.q
-                                descendant.value[-1] = AggCount.agg(descendant.value[-1], value)
+                                descendant.value = [0 if self._get_func(descendant.name) == 'count' else None] * self.q
+                                descendant.value[-1] = self._new_value(descendant.name, descendant.value[-1], value)
                     return True
             return False
 
         def _oldest_values_to_values_tree(self, el):
-            el.value.append(0)
+            el.value.append(0 if self._get_func(el.name) == 'count' else None)
             return self.ValuesNode(el.fullname, el.name, el.value.pop(0), children=[self._oldest_values_to_values_tree(c) for c in el.children])
 
         def _delete_zero_elements(self, node):
@@ -55,17 +52,20 @@ class AggTree(AggTreeBase):
 
         def delete_zero_elements(self):
             for el in self.queue:
-                if sum(self.queue[el].value) == 0:
-                    self.queue[el] = self.ValuesNode('', '', [0] * self.q)
-                else:
-                    self._delete_zero_elements(self.queue[el])
+                f = self._get_func(el)
+                if f == 'count':
+                    if sum(self.queue[el].value) == 0:
+                        self.queue[el] = self.ValuesNode(f, f, [0] * self.q)
+                    else:
+                        self._delete_zero_elements(self.queue[el])
 
         def add(self, dt: datetime, values):
 
             # start queue if it is empty
             if not self.time_start:
                 for el in values:
-                    self.queue[el] = self.ValuesNode('', '', [0] * self.q)
+                    f = self._get_func(el)
+                    self.queue[el] = self.ValuesNode(f'{f if f == "count" else el}', f'{f if f == "count" else el}', [None] * self.q)
                     self._merge_trees([self.queue[el]], values[el])
                 self.time_start = dt - self.time_range + self.time_delta
                 return
@@ -85,7 +85,8 @@ class AggTree(AggTreeBase):
             # new element belongs to last element of queue
             for el in values:
                 if not self.queue.get(el):
-                    self.queue[el] = self.ValuesNode('', '', [0] * self.q)
+                    f = self._get_func(el)
+                    self.queue[el] = self.ValuesNode(f'{f if f == "count" else el}', f'{f if f == "count" else el}', [0 if f == 'count' else None] * self.q)
                 self._merge_trees([self.queue[el]], values[el])
 
     def __init__(self, tree: dict, params: list):
@@ -125,19 +126,6 @@ class AggTree(AggTreeBase):
             subparam = subparam[-1] if type(subparam[-1]) == list else []
         return name
 
-    def _create_tree(self, js):
-        
-        if not js:
-            return None
-    
-        if not js.get('name', None) or not js.get('range', None) or not js.get('delta', None):
-            raise Exception('Bad json format')
-    
-        return self.TimeSeries(name=js['name'],
-                               time_range=timedelta(seconds=timeparse(js['range'])),
-                               time_delta=timedelta(seconds=timeparse(js['delta'])),
-                               children=[self._create_tree(c) for c in js.get('child', [])])
-
     def print(self):
         for pre, _, node in RenderTree(self.tree):
             treestr = u"%s%s" % (pre, node.name)
@@ -148,16 +136,28 @@ class AggTree(AggTreeBase):
                     treestr1 = u"%s%s" % (pre1, node1.name)
                     print(f'{" " * len(pre)}{treestr1.ljust(8)}:    {node1.value}\n')
 
-    def _create_values_tree(self, row, param, prev):
-        name = ' && '.join([f'{el}={row[el]}' for el in sorted(param) if type(el) == str])
+    def _create_count_values_tree(self, row, param, prev):
+
+        if not param:
+            return []
+
+        str_params = [el for el in param if type(el) == str]
+        lst_param = param[-1] if type(param[-1]) == list else []
+
+        name = ' && '.join([f'{el}={row[el]}' for el in sorted(str_params) if type(el) == str])
         fullname = ' | '.join([prev, name]) if prev else name
-        l = param[-1] if type(param[-1]) == list else []
-        return self.TimeSeries.ValuesNode(fullname, name, 1, children=[self._create_values_tree(row, l, fullname)] if l else [])
+
+        return [self.TimeSeries.ValuesNode(f'count : {fullname}', f'count : {name}', 1, children=self._create_count_values_tree(row, lst_param, fullname))]
 
     def select_params(self, row):
         values = dict()
-        for param in self.params:
-            values[param] = self.TimeSeries.ValuesNode('', '', 1, children=[self._create_values_tree(row, self.params[param], '')])
+        for key in self.params.keys():
+            if key == 'count':
+                for param in self.params[key]:
+                    values[f'{key} : {param}'] = self.TimeSeries.ValuesNode(f'{key}', f'{key}', 1 if key == 'count' else row[param[0]], children=self._create_count_values_tree(row, self.params[key][param], ''))
+            else:
+                for param in self.params[key]:
+                    values[f'{key} : {self.params[key][param][0]}'] = self.TimeSeries.ValuesNode(f'{key} : {self.params[key][param][0]}', f'{key} : {self.params[key][param][0]}', row[self.params[key][param][0]])
         return row['datetime'], values
 
     def aggregate(self, row):

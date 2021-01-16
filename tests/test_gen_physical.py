@@ -64,8 +64,8 @@ if __name__ == '__main__':
         }
         
     trees = [ agg0.AggTree(tree_conf, params_conf0),
-            #  agg1.AggTree(tree_conf, params_conf1),
-            #  agg2.AggTree(tree_conf, params_conf1),
+              #agg1.AggTree(tree_conf, params_conf1),
+              agg2.AggTree(tree_conf, params_conf1),
               agg3.AggTree(tree_conf, params_conf0)
             ]
 
@@ -90,3 +90,6 @@ if __name__ == '__main__':
     
     for tree in trees:
         tree.print()
+        print()
+        print('--------------------------------------------------------------------------------------------------------------------------------')
+        print()

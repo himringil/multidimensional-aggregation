@@ -1,7 +1,6 @@
 from sys import argv
 from datetime import datetime, timedelta
-from pytimeparse.timeparse import timeparse
-from anytree import NodeMixin, RenderTree
+from anytree import RenderTree
 from pympler import asizeof
 
 from agg import *
@@ -18,7 +17,7 @@ class AggTree(AggTreeBase):
        
         def delete_zero_elements(self):
             for key in list(self.queue.keys()):
-                if key.split(' : ')[0] == 'count' and sum(self.queue[key]) == 0:
+                if self._get_func(key) == 'count' and sum(self.queue[key]) == 0:
                     self.queue.pop(key)
 
                     # remove node from graph
@@ -39,7 +38,7 @@ class AggTree(AggTreeBase):
             # start queue if it is empty
             if not self.time_start:
                 for el in values:
-                    self.queue[el] = [0 if el.split(' : ')[0] == 'count' else None] * self.q
+                    self.queue[el] = [None] * self.q
                     self.queue[el][-1] = values[el]
                 self.time_start = dt - self.time_range + self.time_delta
                 self.graph = graph.copy()
@@ -55,7 +54,7 @@ class AggTree(AggTreeBase):
                     value = self.queue[el].pop(0)
                     if value:
                         old_values[el] = value
-                    self.queue[el].append(0 if el.split(' : ')[0] == 'count' else None)
+                    self.queue[el].append(0 if self._get_func(el) == 'count' else None)
 
                 # filter graph
                 old_graph = dict()
@@ -74,16 +73,8 @@ class AggTree(AggTreeBase):
             # new element belongs to last element of queue
             for el in values:
                 if not self.queue.get(el):
-                    self.queue[el] = [0 if el.split(' : ')[0] == 'count' else None] * self.q
-                f = el.split(' : ')[0]
-                if f == 'count':
-                    self.queue[el][-1] = AggCount.agg(self.queue[el][-1], values[el])
-                elif f == 'min':
-                    self.queue[el][-1] = AggMin.agg(self.queue[el][-1], values[el])
-                elif f == 'max':
-                    self.queue[el][-1] = AggMax.agg(self.queue[el][-1], values[el])
-                elif f == 'sum':
-                    self.queue[el][-1] = AggSum.agg(self.queue[el][-1], values[el])
+                    self.queue[el] = [0 if self._get_func(el) == 'count' else None] * self.q
+                self.queue[el][-1] = self._new_value(el, self.queue[el][-1], values[el])
 
             self._append_graph(graph)
     
@@ -111,8 +102,8 @@ class AggTree(AggTreeBase):
             print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta} nodes={len(node.graph.keys())}')
             for el in sorted(node.queue):
                 print(f'{" " * len(pre)}{el}: {node.queue[el]}')
-            for el in node.graph:
-                print(f'    {el}: {node.graph[el]}')
+            #for el in node.graph:
+            #    print(f'    {el}: {node.graph[el]}')
 
     def select_params(self, row):
     
@@ -132,8 +123,8 @@ class AggTree(AggTreeBase):
 
         for node1 in graph.keys():
             for node2 in graph.keys():
-                n1 = node1.split(' : ')[1]
-                n2 = node2.split(' : ')[1]
+                n1 = self._get_func(node1)
+                n2 = self._get_func(node2)
                 if node1 != node2:
                     ps = n2.split(' & ')
                     for p in ps:
