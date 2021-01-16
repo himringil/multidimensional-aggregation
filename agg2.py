@@ -22,6 +22,26 @@ class AggTree(AggTreeBase):
                 if children:
                     self.children = children
 
+        def _delete_zero_elements(self, node):
+            for child in node.children:
+                if sum(child.value) == 0:
+                    child.parent = None
+                else:
+                    self._delete_zero_elements(child)
+
+        def delete_zero_elements(self):
+            for el in self.queue:
+                f = self._get_func(el)
+                if f == 'count':
+                    if sum(self.queue[el].value) == 0:
+                        self.queue[el] = self.ValuesNode(f, f, [0] * self.q)
+                    else:
+                        self._delete_zero_elements(self.queue[el])
+
+        def _oldest_values_to_values_tree(self, el):
+            el.value.append(0 if self._get_func(el.name) == 'count' else None)
+            return self.ValuesNode(el.fullname, el.name, el.value.pop(0), children=[self._oldest_values_to_values_tree(c) for c in el.children])
+
         def _merge_trees(self, nodes_to, node_from):
             for node_to in nodes_to:
                 if node_to.name == node_from.name:
@@ -38,26 +58,6 @@ class AggTree(AggTreeBase):
                                 descendant.value[-1] = self._new_value(descendant.name, descendant.value[-1], value)
                     return True
             return False
-
-        def _oldest_values_to_values_tree(self, el):
-            el.value.append(0 if self._get_func(el.name) == 'count' else None)
-            return self.ValuesNode(el.fullname, el.name, el.value.pop(0), children=[self._oldest_values_to_values_tree(c) for c in el.children])
-
-        def _delete_zero_elements(self, node):
-            for child in node.children:
-                if sum(child.value) == 0:
-                    child.parent = None
-                else:
-                    self._delete_zero_elements(child)
-
-        def delete_zero_elements(self):
-            for el in self.queue:
-                f = self._get_func(el)
-                if f == 'count':
-                    if sum(self.queue[el].value) == 0:
-                        self.queue[el] = self.ValuesNode(f, f, [0] * self.q)
-                    else:
-                        self._delete_zero_elements(self.queue[el])
 
         def add(self, dt: datetime, values):
 
@@ -144,7 +144,7 @@ class AggTree(AggTreeBase):
         str_params = [el for el in param if type(el) == str]
         lst_param = param[-1] if type(param[-1]) == list else []
 
-        name = ' && '.join([f'{el}={row[el]}' for el in sorted(str_params) if type(el) == str])
+        name = ' && '.join([f'{el}={row[el]}' for el in sorted(str_params)])
         fullname = ' | '.join([prev, name]) if prev else name
 
         return [self.TimeSeries.ValuesNode(f'count : {fullname}', f'count : {name}', 1, children=self._create_count_values_tree(row, lst_param, fullname))]
@@ -154,10 +154,13 @@ class AggTree(AggTreeBase):
         for key in self.params.keys():
             if key == 'count':
                 for param in self.params[key]:
-                    values[f'{key} : {param}'] = self.TimeSeries.ValuesNode(f'{key}', f'{key}', 1 if key == 'count' else row[param[0]], children=self._create_count_values_tree(row, self.params[key][param], ''))
+                    values[f'{key} : {param}'] = self.TimeSeries.ValuesNode(f'{key}', f'{key}', 1,
+                                                                            children=self._create_count_values_tree(row, self.params[key][param], ''))
             else:
                 for param in self.params[key]:
-                    values[f'{key} : {self.params[key][param][0]}'] = self.TimeSeries.ValuesNode(f'{key} : {self.params[key][param][0]}', f'{key} : {self.params[key][param][0]}', row[self.params[key][param][0]])
+                    values[f'{key} : {self.params[key][param][0]}'] = self.TimeSeries.ValuesNode(f'{key} : {self.params[key][param][0]}',
+                                                                                                 f'{key} : {self.params[key][param][0]}',
+                                                                                                 row[self.params[key][param][0]])
         return row['datetime'], values
 
     def aggregate(self, row):
