@@ -33,7 +33,7 @@ class AggTree(AggTreeBase):
             for el in self.queue:
                 f = self._get_func(el)
                 if f == 'count':
-                    if sum(self.queue[el].value) == 0:
+                    if sum([el for el in self.queue[el].value if el is not None]) == 0:
                         self.queue[el] = self.ValuesNode(f, f, [0] * self.q)
                     else:
                         self._delete_zero_elements(self.queue[el])

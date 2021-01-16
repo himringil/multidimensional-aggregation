@@ -37,10 +37,12 @@ if __name__ == '__main__':
     for aggN, params_conf in zip([agg0, agg1, agg2, agg3], params_confs):
     
         print(aggN.__name__)
-    
+
         tree = aggN.AggTree(agg.load_tree(tree_conf), agg.load_params(params_conf))
 
         for tree in aggregate(tree, data_path):
+
+            tree.print()
 
             print('--------------------------------')
             tree.filter(['10sec -> 1sec', '10min -> 1min'], [['src', '192.168.1.10']]).print()
