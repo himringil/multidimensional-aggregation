@@ -1,5 +1,5 @@
 1,agg0,cnt_queu,176
-1,agg0,agg_time,29443
+1,agg0,agg_time,28443
 1,agg0,sum_size,195160
 1,agg4,cnt_queu,176
 1,agg4,agg_time,28183
@@ -44,7 +44,7 @@
 8,agg0,agg_time,28255
 8,agg0,sum_size,1926264
 8,agg4,cnt_queu,1408
-8,agg4,agg_time,41101
+8,agg4,agg_time,40101
 8,agg4,sum_size,1994176
 9,agg0,cnt_queu,1530
 9,agg0,agg_time,28234
@@ -80,7 +80,7 @@
 14,agg0,agg_time,28305
 14,agg0,sum_size,2374680
 14,agg4,cnt_queu,2464
-14,agg4,agg_time,54744
+14,agg4,agg_time,49744
 14,agg4,sum_size,3666704
 15,agg0,cnt_queu,1658
 15,agg0,agg_time,28226
@@ -92,7 +92,7 @@
 16,agg0,agg_time,28330
 16,agg0,sum_size,2375160
 16,agg4,cnt_queu,2816
-16,agg4,agg_time,54404
+16,agg4,agg_time,53404
 16,agg4,sum_size,4224416
 17,agg0,cnt_queu,1658
 17,agg0,agg_time,28410

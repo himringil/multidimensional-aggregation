@@ -29,7 +29,7 @@ def test(uniq_params):
 
     for n in range(2, cnt_params + 1):
         conf = [[f'p{i}'] for i in range(1, n + 1)]
-        params_conf.append(conf + [[c[0] for c in conf]])
+        params_conf.append({'count' : conf + [[c[0] for c in conf]]})
         confs = ' & '.join([c[0] for c in conf])
         rel = [[f'p{i}', confs] for i in range(1, n + 1)]
         params_rel.append(rel)
@@ -37,27 +37,43 @@ def test(uniq_params):
     tree0 = [agg0.AggTree(tree_conf, params) for params in params_conf]
     tree3 = [agg3.AggTree(tree_conf, params) for params in params_conf]
 
+    time0 = [timedelta(0)] * len(params_conf)
+    time3 = [timedelta(0)] * len(params_conf)
+
     dt = pd.to_datetime('19Dec2020 19:00:00', errors='coerce', format='%d%b%Y %H:%M:%S')
     packet = dict()
+
+    cnt_packets = 0
 
     for i in range(time_range + 1):
 
         print(f'{datetime.now()} -> {i}')
 
         packets_per_second = randint(200, 300)
+        cnt_packets += packets_per_second
 
         for j in range(packets_per_second):
 
             packet = generate(cnt_params, uniq_params)
             packet['datetime'] = dt
 
-            for tree in tree0:
+            for i, tree in enumerate(tree0):
+                ts = datetime.now()
                 tree.aggregate(packet)
+                time0[i] += (datetime.now() - ts)
 
-            for tree in tree3:
+            for i, tree in enumerate(tree3):
+                ts = datetime.now()
                 tree.aggregate(packet)
+                time3[i] += (datetime.now() - ts)
 
         dt += timedelta(seconds=1)
+
+    print(f'Packets: {cnt_packets}')
+    for i, (t0, t3) in enumerate(zip(time0, time3)):
+        print(f'{i+2}: {format(t0.total_seconds() * 1000 / cnt_packets * 10000, ".3f")} - {format(t3.total_seconds() * 1000 / cnt_packets * 10000, ".3f")}')
+    
+    return
 
     f = open(f'results/test3-{uniq_params}.csv', 'w')
 
@@ -109,5 +125,5 @@ def test(uniq_params):
 
 if __name__ == '__main__':
 
-    for i in [10]:
+    for i in [50]:
         test(i)
