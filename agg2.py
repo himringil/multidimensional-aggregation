@@ -24,7 +24,7 @@ class AggTree(AggTreeBase):
 
         def _delete_zero_elements(self, node):
             for child in node.children:
-                if sum(child.value) == 0:
+                if sum([el for el in child.value if el is not None]) == 0:
                     child.parent = None
                 else:
                     self._delete_zero_elements(child)

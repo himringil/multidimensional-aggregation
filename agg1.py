@@ -25,7 +25,7 @@ class AggTree(AggTreeBase):
         def delete_zero_elements(self):
             for key in list(self.queue.keys()):
                 f = self._get_func(key)
-                if f == 'count' and sum([el.value for el in self.queue[key]]) == 0:
+                if f == 'count' and sum([el.value for el in self.queue[key] if el.value is not None]) == 0:
                     self.queue[key] = [self.ValuesNode(f, f, 0) for i in range(self.q)]
     
         def _merge_trees(self, nodes_to, node_from):

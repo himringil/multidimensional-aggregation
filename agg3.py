@@ -17,7 +17,7 @@ class AggTree(AggTreeBase):
        
         def delete_zero_elements(self):
             for key in list(self.queue.keys()):
-                if self._get_func(key) == 'count' and sum(self.queue[key]) == 0:
+                if self._get_func(key) == 'count' and sum([el for el in self.queue[key] if el is not None]) == 0:
                     self.queue.pop(key)
 
                     # remove node from graph

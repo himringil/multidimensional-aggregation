@@ -31,19 +31,26 @@ def test():
      "delta":"1s"
      }
     
-    params_conf = [ [ [ "src" ],
-                      [ "dst" ],
-                      [ "src", "dst" ]
-                    ],
-                    [ [ "src", [ "dst" ]],
-                      [ "dst", [ "src" ]]
-                    ]
+    params_conf = [ 
+                    { 'count':
+                      [
+                          [ "src" ],
+                          [ "dst" ],
+                          [ "src", "dst" ]
+                      ]
+                    },
+                    { 'count':
+                      [
+                          [ "src", [ "dst" ]],
+                          [ "dst", [ "src" ]]
+                      ]
+                    }
                   ]
 
     data_path = 'data_example'
     
-    ranges = [ 500, 1000, 5000, 10000, 15000, 20000, 25000, 30000 ]
-    n_files = [  1,    1,    4,     8,    11,    15,    19,    22 ]
+    ranges = [ 500, 1000, 5000, 10000, 15000, 20000 ]
+    n_files = [  1,    1,    4,     8,    11,    15 ]
 
     cnt_tests = 3
 
