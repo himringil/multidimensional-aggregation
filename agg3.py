@@ -102,8 +102,9 @@ class AggTree(AggTreeBase):
             print(f'{treestr.ljust(8)}: ts={node.time_start} tr={node.time_range} td={node.time_delta} nodes={len(node.graph.keys())}')
             for el in sorted(node.queue):
                 print(f'{" " * len(pre)}{el}: {node.queue[el]}')
-            #for el in node.graph:
-            #    print(f'    {el}: {node.graph[el]}')
+            for el in node.graph:
+                if node.graph[el]:
+                    print(f'    {el}: {node.graph[el]}')
 
     def select_params(self, row):
     
@@ -118,13 +119,15 @@ class AggTree(AggTreeBase):
                     graph[k] = set()
             elif key in [ 'min', 'max', 'sum' ]:
                 for param in self.params[key]:
-                    k = f'{key} : {param[0]}'
-                    values[k] = row[param[0]]
+                    k = f'{key} : ' + ' & '.join([f'{el}' for el in sorted(param)])
+                    l = [row[el] for el in sorted(param)]
+                    values[k] = self._get_val(key, l)
+                    graph[k] = set()
 
         for node1 in graph.keys():
             for node2 in graph.keys():
-                n1 = self._get_func(node1)
-                n2 = self._get_func(node2)
+                n1 = self._get_params(node1)
+                n2 = self._get_params(node2)
                 if node1 != node2:
                     ps = n2.split(' & ')
                     for p in ps:

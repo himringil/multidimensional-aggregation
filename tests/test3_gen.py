@@ -13,7 +13,7 @@ def generate(params_cnt, values_cnt):
 
 def test(uniq_params):
 
-    time_range = 100
+    time_range = 10
 
     tree_conf = {
      "name":"1second",
@@ -22,14 +22,14 @@ def test(uniq_params):
      }
     
     cnt_tests = 5
-    cnt_params = 12
+    cnt_params = 4
 
     params_conf = []
     params_rel = []
 
     for n in range(2, cnt_params + 1):
         conf = [[f'p{i}'] for i in range(1, n + 1)]
-        params_conf.append({'count' : conf + [[c[0] for c in conf]]})
+        params_conf.append({'sum' : conf + [[c[0] for c in conf]]})
         confs = ' & '.join([c[0] for c in conf])
         rel = [[f'p{i}', confs] for i in range(1, n + 1)]
         params_rel.append(rel)
@@ -69,11 +69,16 @@ def test(uniq_params):
 
         dt += timedelta(seconds=1)
 
-    print(f'Packets: {cnt_packets}')
-    for i, (t0, t3) in enumerate(zip(time0, time3)):
-        print(f'{i+2}: {format(t0.total_seconds() * 1000 / cnt_packets * 10000, ".3f")} - {format(t3.total_seconds() * 1000 / cnt_packets * 10000, ".3f")}')
-    
-    return
+    for i, (t0, t3) in enumerate(zip(tree0, tree3)):
+        print(f'{i}\n\n\n\n')
+        t0.print()
+        print('\n\n\n\n')
+        t3.print()
+        print('\n\n\n\n\n\n\n\n')
+
+    #print(f'Packets: {cnt_packets}')
+    #for i, (t0, t3) in enumerate(zip(time0, time3)):
+    #    print(f'{i+2}: {format(t0.total_seconds() * 1000 / cnt_packets * 10000, ".3f")} - {format(t3.total_seconds() * 1000 / cnt_packets * 10000, ".3f")}')
 
     f = open(f'results/test3-{uniq_params}.csv', 'w')
 
@@ -87,17 +92,11 @@ def test(uniq_params):
             rel_time += (datetime.now() - tm)
         rel_time /= cnt_tests
         rel_time = rel_time.total_seconds() * 1000
-        
-        print(f'agg3,{i+2},cnt_queu,{len(tree.tree.queue)}')
-        f.write(f'agg3,{i+2},cnt_queu,{len(tree.tree.queue)}\n')
-        
         sum_size = tree.size()
-        print(f'agg3,{i+2},sum_size,{sum_size}')
+        
+        f.write(f'agg3,{i+2},cnt_queu,{len(tree.tree.queue)}\n')
         f.write(f'agg3,{i+2},sum_size,{sum_size}\n')
-        
-        print(f'agg3,{i+2},rel_time,{rel_time}')
         f.write(f'agg3,{i+2},rel_time,{rel_time}\n')
-        
         f.flush()
 
     for i, (tree, rel) in enumerate(zip(tree0, params_rel)):
@@ -108,22 +107,16 @@ def test(uniq_params):
             rel_time += (datetime.now() - tm)
         rel_time /= cnt_tests
         rel_time = rel_time.total_seconds() * 1000
-
-        print(f'agg0,{i+2},cnt_queu,{len(tree.tree.queue)}')
-        f.write(f'agg0,{i+2},cnt_queu,{len(tree.tree.queue)}\n')
-        
         sum_size = tree.size()
-        print(f'agg0,{i+2},sum_size,{sum_size}')
-        f.write(f'agg0,{i+2},sum_size,{sum_size}\n')
 
-        print(f'agg0,{i+2},rel_time,{rel_time}')
+        f.write(f'agg0,{i+2},cnt_queu,{len(tree.tree.queue)}\n')
+        f.write(f'agg0,{i+2},sum_size,{sum_size}\n')
         f.write(f'agg0,{i+2},rel_time,{rel_time}\n')
-        
         f.flush()
     
     f.close()
 
 if __name__ == '__main__':
 
-    for i in [50]:
+    for i in [5]:
         test(i)

@@ -55,6 +55,19 @@ class AggTreeBase(ABC):
     def _get_func(self, name):
         return name.split(' : ')[0]
 
+    def _get_params(self, name):
+        return name.split(' : ')[1]
+    
+    def _get_val(self, func, l):
+        if func == 'count':
+            return 1
+        if func == 'min':
+            return min(l)
+        if func == 'max':
+            return max(l)
+        if func == 'sum':
+            return sum(l)
+
     @abstractmethod
     def __init__(self, tree: dict, params: list):
         self.tree = self._create_tree(tree)

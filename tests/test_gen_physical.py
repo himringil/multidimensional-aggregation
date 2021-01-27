@@ -13,21 +13,7 @@ def generate(params_cnt, values_cnt):
         result[f'p{p}'] = v_rand
     return result
 
-def aggregate(tree, filepath):
-    df = pd.read_parquet(filepath)
-    df['datetime'] = pd.to_datetime(df['date'].astype(str) + ' ' + df['time'], errors='coerce', format='%d%b%Y %H:%M:%S')
-    df.drop(axis=1, columns=['date', 'time'], inplace=True)
-    df.rename(columns={'i/f_name' : 'if_name', 'i/f_dir' : 'if_dir'}, inplace=True)
-
-    print(f'   --- {datetime.now()} -> {filename} ({len(df.index)} rows)')
-    agg.aggregate(tree, df)
-    print(f'   +++ {datetime.now()} -> {filename} ({len(df.index)} rows)')
-
-    tree.delete_zero_elements()
-
 if __name__ == '__main__':
-
-    data_path = 'data_example/physical.parquet'
 
     time_range = 10
 
@@ -37,20 +23,15 @@ if __name__ == '__main__':
      "delta":"1s"
      }
 
-    params_confs = [ 
-
-        ]
-
-    cnt_tests = 5
     cnt_params = 12
 
     params_conf0 = {
         'count' : [['p1'], ['p2'], ['p4'],
                    ['p1', 'p2', 'p3'],
                    ['p4', 'p5']],
-        'min' : [['p6'], ['p7']],
-        'max' : [['p6'], ['p8']],
-        'sum' : [['p6'], ['p9']]
+        'min' : [['p6'], ['p7'], ['p6', 'p7']],
+        'max' : [['p6'], ['p8'], ['p6', 'p8']],
+        'sum' : [['p6'], ['p9'], ['p6', 'p9']]
         }
 
     params_conf1 = {
@@ -58,9 +39,12 @@ if __name__ == '__main__':
                    ['p2', [ 'p1', 'p3' ]],
                    ['p4', [ 'p5' ]],
                   ],
-        'min' : [['p6'], ['p7']],
-        'max' : [['p6'], ['p8']],
-        'sum' : [['p6'], ['p9']]
+        'min' : [['p6', [ 'p7' ]],
+                 ['p7']],
+        'max' : [['p6', 'p7', [ 'p8' ]],
+                 ['p8']],
+        'sum' : [['p6', [ 'p9' ]],
+                 ['p9']]
         }
         
     trees = [ agg0.AggTree(tree_conf, params_conf0),

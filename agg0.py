@@ -77,11 +77,13 @@ class AggTree(AggTreeBase):
         for key in self.params.keys():
             if key == 'count':
                 for param in self.params[key]:
-                    key = 'count : ' + ' & '.join([f'{el}={row[el]}' for el in sorted(param)])
-                    values[key] = 1
+                    k = 'count : ' + ' & '.join([f'{el}={row[el]}' for el in sorted(param)])
+                    values[k] = 1
             elif key in [ 'min', 'max', 'sum' ]:
                 for param in self.params[key]:
-                    values[f'{key} : {param[0]}'] = row[param[0]]
+                    k = f'{key} : ' + ' & '.join([f'{el}' for el in sorted(param)])
+                    l = [row[el] for el in sorted(param)]
+                    values[k] = self._get_val(key, l)
         return row['datetime'], values
     
     def aggregate(self, row):

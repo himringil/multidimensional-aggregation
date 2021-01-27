@@ -28,7 +28,7 @@ class AggSum(AggFunction):
         if not type(params) == list:
             return False
         for param in params:
-            if not type(param) == list or not len(param) == 1:
+            if not type(param) == list:
                 return False
             if not type(param[0]) == str:
                 return False
@@ -45,7 +45,7 @@ class AggMin(AggFunction):
         if not type(params) == list:
             return False
         for param in params:
-            if not type(param) == list or not len(param) == 1:
+            if not type(param) == list:
                 return False
             if not type(param[0]) == str:
                 return False
@@ -62,7 +62,7 @@ class AggMax(AggFunction):
         if not type(params) == list:
             return False
         for param in params:
-            if not type(param) == list or not len(param) == 1:
+            if not type(param) == list:
                 return False
             if not type(param[0]) == str:
                 return False
