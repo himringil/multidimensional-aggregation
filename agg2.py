@@ -149,7 +149,7 @@ class AggTree(AggTreeBase):
 
         return [self.TimeSeries.ValuesNode(f'count : {fullname}', f'count : {name}', 1, children=self._create_count_values_tree(row, lst_param, fullname))]
 
-    def _create_values_tree(self, row, param, prev, func):
+    def _create_values_tree(self, row, param, prev, func, prev_val):
 
         if not param:
             return []
@@ -161,8 +161,9 @@ class AggTree(AggTreeBase):
         fullname = ' | '.join([prev, name]) if prev else name
 
         l = [row[el] for el in sorted(str_params)]
+        val = self._new_value(func, prev_val, self._get_val(func, l))
 
-        return [self.TimeSeries.ValuesNode(f'{func} : {fullname}', f'{func} : {name}', self._get_val(func, l), children=self._create_values_tree(row, lst_param, fullname, func))]
+        return [self.TimeSeries.ValuesNode(f'{func} : {fullname}', f'{func} : {name}', val, children=self._create_values_tree(row, lst_param, fullname, func, val))]
 
     def select_params(self, row):
         values = dict()
@@ -178,11 +179,7 @@ class AggTree(AggTreeBase):
                         str_params += el.split(' && ')
                     l = [row[el] for el in sorted(str_params)]
                     values[f'{key} : {param}'] = self.TimeSeries.ValuesNode(f'{key}', f'{key}', self._get_val(key, l),
-                                                                            children=self._create_values_tree(row, self.params[key][param], '', key))
-
-        for value in values:
-            print(f'{value} :     {values[value].name} ({values[value].fullname})      : {values[value].value}')
-
+                                                                            children=self._create_values_tree(row, self.params[key][param], '', key, None))
         return row['datetime'], values
 
     def aggregate(self, row):

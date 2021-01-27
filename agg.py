@@ -68,6 +68,18 @@ class AggTreeBase(ABC):
         if func == 'sum':
             return sum(l)
 
+    def _new_value(self, name, old_value, new_value):
+        f = self._get_func(name)
+        if f == 'count':
+            return AggCount.agg(old_value, new_value)
+        elif f == 'min':
+            return AggMin.agg(old_value, new_value)
+        elif f == 'max':
+            return AggMax.agg(old_value, new_value)
+        elif f == 'sum':
+            return AggSum.agg(old_value, new_value)
+        raise ValueError(f'Unknown aggregation function {f}')
+
     @abstractmethod
     def __init__(self, tree: dict, params: list):
         self.tree = self._create_tree(tree)
